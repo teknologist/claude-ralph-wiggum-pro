@@ -6,6 +6,17 @@
 
 set -euo pipefail
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Log session helper function
+log_session() {
+  local outcome="$1"
+  local error_reason="${2:-}"
+  "$PLUGIN_ROOT/scripts/log-session.sh" "$RALPH_STATE_FILE" "$outcome" "$error_reason" 2>/dev/null || true
+}
+
 # Read hook input from stdin (advanced stop hook API)
 HOOK_INPUT=$(cat)
 
@@ -40,6 +51,7 @@ if [[ ! "$ITERATION" =~ ^[0-9]+$ ]]; then
   echo "" >&2
   echo "   This usually means the state file was manually edited or corrupted." >&2
   echo "   Ralph loop is stopping. Run /ralph-loop again to start fresh." >&2
+  log_session "error" "Invalid iteration field: $ITERATION"
   rm "$RALPH_STATE_FILE"
   exit 0
 fi
@@ -51,6 +63,7 @@ if [[ ! "$MAX_ITERATIONS" =~ ^[0-9]+$ ]]; then
   echo "" >&2
   echo "   This usually means the state file was manually edited or corrupted." >&2
   echo "   Ralph loop is stopping. Run /ralph-loop again to start fresh." >&2
+  log_session "error" "Invalid max_iterations field: $MAX_ITERATIONS"
   rm "$RALPH_STATE_FILE"
   exit 0
 fi
@@ -58,6 +71,7 @@ fi
 # Check if max iterations reached
 if [[ $MAX_ITERATIONS -gt 0 ]] && [[ $ITERATION -ge $MAX_ITERATIONS ]]; then
   echo "🛑 Ralph loop: Max iterations ($MAX_ITERATIONS) reached."
+  log_session "max_iterations"
   rm "$RALPH_STATE_FILE"
   exit 0
 fi
@@ -70,6 +84,7 @@ if [[ ! -f "$TRANSCRIPT_PATH" ]]; then
   echo "   Expected: $TRANSCRIPT_PATH" >&2
   echo "   This is unusual and may indicate a Claude Code internal issue." >&2
   echo "   Ralph loop is stopping." >&2
+  log_session "error" "Transcript file not found"
   rm "$RALPH_STATE_FILE"
   exit 0
 fi
@@ -81,6 +96,7 @@ if ! grep -q '"role":"assistant"' "$TRANSCRIPT_PATH"; then
   echo "   Transcript: $TRANSCRIPT_PATH" >&2
   echo "   This is unusual and may indicate a transcript format issue" >&2
   echo "   Ralph loop is stopping." >&2
+  log_session "error" "No assistant messages in transcript"
   rm "$RALPH_STATE_FILE"
   exit 0
 fi
@@ -90,6 +106,7 @@ LAST_LINE=$(grep '"role":"assistant"' "$TRANSCRIPT_PATH" | tail -1)
 if [[ -z "$LAST_LINE" ]]; then
   echo "⚠️  Ralph loop: Failed to extract last assistant message" >&2
   echo "   Ralph loop is stopping." >&2
+  log_session "error" "Failed to extract last assistant message"
   rm "$RALPH_STATE_FILE"
   exit 0
 fi
@@ -108,6 +125,7 @@ if [[ $? -ne 0 ]]; then
   echo "   Error: $LAST_OUTPUT" >&2
   echo "   This may indicate a transcript format issue" >&2
   echo "   Ralph loop is stopping." >&2
+  log_session "error" "Failed to parse assistant message JSON"
   rm "$RALPH_STATE_FILE"
   exit 0
 fi
@@ -115,6 +133,7 @@ fi
 if [[ -z "$LAST_OUTPUT" ]]; then
   echo "⚠️  Ralph loop: Assistant message contained no text content" >&2
   echo "   Ralph loop is stopping." >&2
+  log_session "error" "Assistant message contained no text content"
   rm "$RALPH_STATE_FILE"
   exit 0
 fi
@@ -130,6 +149,7 @@ if [[ "$COMPLETION_PROMISE" != "null" ]] && [[ -n "$COMPLETION_PROMISE" ]]; then
   # == in [[ ]] does glob pattern matching which breaks with *, ?, [ characters
   if [[ -n "$PROMISE_TEXT" ]] && [[ "$PROMISE_TEXT" = "$COMPLETION_PROMISE" ]]; then
     echo "✅ Ralph loop: Detected <promise>$COMPLETION_PROMISE</promise>"
+    log_session "success"
     rm "$RALPH_STATE_FILE"
     exit 0
   fi
@@ -173,6 +193,7 @@ if [[ -z "$PROMPT_TEXT" ]]; then
   echo "     • File was corrupted during writing" >&2
   echo "" >&2
   echo "   Ralph loop is stopping. Run /ralph-loop again to start fresh." >&2
+  log_session "error" "No prompt text found in state file"
   rm "$RALPH_STATE_FILE"
   exit 0
 fi

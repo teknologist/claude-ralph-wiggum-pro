@@ -36,6 +36,19 @@ plugin-name/
 - Use kebab-case for all file and directory names
 - Use `${CLAUDE_PLUGIN_ROOT}` for all internal path references (never hardcode paths)
 
+## Environment Variables
+
+### `${CLAUDE_PLUGIN_ROOT}`
+**Automatically substituted** by Claude Code to the absolute path of the plugin directory. Use it everywhere:
+- Command markdown files (bash commands in instructions)
+- Hook configurations (`hooks.json`)
+- MCP server definitions (`.mcp.json`)
+- Any script references within the plugin
+
+Example: `${CLAUDE_PLUGIN_ROOT}/scripts/my-script.sh` resolves to `/Users/name/.claude/plugins/my-plugin/scripts/my-script.sh`
+
+**Important:** Plugins cannot reference files outside their directory - path traversal like `../shared-utils` won't work after installation.
+
 ## Component Formats
 
 ### Commands (`commands/*.md`)

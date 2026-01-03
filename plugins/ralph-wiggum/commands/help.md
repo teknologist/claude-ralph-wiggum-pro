@@ -66,8 +66,40 @@ Cancel an active Ralph loop (removes the loop state file).
 
 **How it works:**
 - Checks for active loop state file
+- Logs the cancellation to session history
 - Removes `.claude/.ralph-loop.local.md`
 - Reports cancellation with iteration count
+
+---
+
+### /ralph-stats [OPTIONS]
+
+View historical Ralph loop session data.
+
+**Usage:**
+```
+/ralph-stats                    # Show last 10 sessions
+/ralph-stats --last 20          # Show last 20 sessions
+/ralph-stats --project my-api   # Filter by project
+/ralph-stats --outcome success  # Show only successful loops
+/ralph-stats --all              # Show all sessions
+```
+
+**Options:**
+- `--last N`, `-n N` - Show last N sessions (default: 10)
+- `--project NAME`, `-p NAME` - Filter by project name
+- `--outcome TYPE`, `-o TYPE` - Filter by outcome (success, max_iterations, cancelled, error)
+- `--all`, `-a` - Show all sessions
+
+**Shows:**
+- Project name
+- Task description
+- Iterations completed
+- Duration
+- Outcome (success/max/cancel/error)
+- Start and end timestamps
+
+**Log location:** `~/.claude/ralph-wiggum-logs/sessions.jsonl`
 
 ---
 

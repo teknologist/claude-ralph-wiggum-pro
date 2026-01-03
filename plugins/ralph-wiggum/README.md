@@ -8,6 +8,8 @@ Implementation of the Ralph Wiggum technique for iterative, self-referential AI 
 - **Progress Tracking**: Elapsed time display and iteration counting
 - **File-based Prompts**: Load complex prompts from markdown files with `--prompt-file`
 - **Loop Management**: List all active loops with `/list-ralph-loops`, cancel specific loops with `/cancel-ralph`
+- **Session Logging**: All loop sessions are logged to `~/.claude/ralph-wiggum-logs/sessions.jsonl` with structured JSON data
+- **Session Stats**: View historical loop data with `/ralph-stats` - filter by project, outcome, or time range
 
 ## What is Ralph?
 
@@ -109,8 +111,44 @@ Cancel active Ralph loop(s). If multiple loops exist, you'll be prompted to sele
 ```
 
 **Behavior:**
-- Single loop: Cancels immediately
+- Single loop: Cancels immediately (after confirmation)
 - Multiple loops: Shows list with descriptions, allows selecting one or all to cancel
+- Logs the cancellation to session history
+
+### /ralph-stats
+
+View historical Ralph loop session data.
+
+**Usage:**
+```bash
+/ralph-stats                        # Show last 10 sessions
+/ralph-stats --last 20              # Show last 20 sessions
+/ralph-stats --project my-api       # Filter by project name
+/ralph-stats --outcome success      # Filter by outcome
+/ralph-stats --all                  # Show all sessions
+```
+
+**Options:**
+- `--last N`, `-n N` - Show last N sessions (default: 10)
+- `--project NAME`, `-p NAME` - Filter by project name (partial match)
+- `--outcome TYPE`, `-o TYPE` - Filter by outcome: `success`, `max_iterations`, `cancelled`, `error`
+- `--all`, `-a` - Show all sessions
+
+**Output:**
+```
+📊 Ralph Loop Session History
+═════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+Project         Task                           Iters/Max  Duration  Promise      Outcome     Started              Ended
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+my-api          Build REST API for todos...    15/50      1h 15m    COMPLETE     ✅ success  2024-01-15 10:30     2024-01-15 11:45
+my-api          Fix auth bug                   20/20      45m       FIXED        ⏹ max      2024-01-14 14:00     2024-01-14 14:45
+
+═════════════════════════════════════════════════════════════════════════════════════════════════════════
+Total: 2 sessions | ✅ 1 | ⏹ 1 | 🚫 0 | ❌ 0
+```
+
+**Log location:** `~/.claude/ralph-wiggum-logs/sessions.jsonl`
 
 ## Prompt Writing Best Practices
 
