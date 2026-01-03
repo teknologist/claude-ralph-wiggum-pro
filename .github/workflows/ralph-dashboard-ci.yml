@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - 'ralph-dashboard/**'
+      - '.github/workflows/ralph-dashboard-ci.yml'
   pull_request:
     branches: [main]
     paths:
       - 'ralph-dashboard/**'
+  workflow_dispatch:  # Allow manual triggers
 
 defaults:
   run:
