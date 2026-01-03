@@ -1,14 +1,14 @@
 {
   "name": "ralph-dashboard",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Web dashboard for Ralph Wiggum loops - view active and archived sessions",
   "type": "module",
   "bin": {
     "ralph-dashboard": "./server/index.ts"
   },
   "scripts": {
-    "dev": "vite",
-    "dev:server": "bun run server/index.ts --port 3847",
+    "dev": "concurrently \"bun run dev:vite\" \"bun run dev:server\"",
+    "dev:server": "bun --watch server/index.ts --port 3847",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "start": "bun run server/index.ts",
@@ -16,7 +16,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src server --ext .ts,.tsx"
+    "lint": "eslint src server --ext .ts,.tsx",
+    "dev:vite": "vite"
   },
   "dependencies": {
     "react": "^19.0.0",
@@ -24,15 +25,16 @@
     "@tanstack/react-query": "^5.60.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.0",
+    "@testing-library/react": "^16.1.0",
     "@types/bun": "^1.1.14",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^2.1.0",
-    "@testing-library/react": "^16.1.0",
-    "@testing-library/jest-dom": "^6.6.0",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.2.1",
     "eslint": "^9.16.0",
     "jsdom": "^25.0.0",
     "postcss": "^8.4.49",
@@ -46,5 +48,6 @@
     "server",
     "package.json",
     "README.md"
-  ]
+  ],
+  "license": "MIT"
 }

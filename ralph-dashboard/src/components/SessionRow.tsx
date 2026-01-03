@@ -122,9 +122,10 @@ export function SessionRow({ session }: SessionRowProps) {
           {formatDuration(session.duration_seconds)}
         </td>
         <td className="px-4 py-3 text-gray-600">
-          {session.iterations !== undefined
+          {/* Show N/A only when iterations is truly unknown (null/undefined), 0 is valid */}
+          {session.iterations != null
             ? `${session.iterations}/${session.max_iterations}`
-            : `—/${session.max_iterations}`}
+            : `N/A`}
         </td>
       </tr>
       {isExpanded && (

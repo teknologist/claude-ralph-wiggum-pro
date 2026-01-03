@@ -80,6 +80,15 @@ HELP_EOF
       PROMPT_FILE="$2"
       shift 2
       ;;
+    --max-iterations=*)
+      # Handle --max-iterations=VALUE format
+      MAX_ITERATIONS="${1#--max-iterations=}"
+      if ! [[ "$MAX_ITERATIONS" =~ ^[0-9]+$ ]]; then
+        echo "❌ Error: --max-iterations must be a positive integer or 0, got: $MAX_ITERATIONS" >&2
+        exit 1
+      fi
+      shift
+      ;;
     --max-iterations)
       if [[ -z "${2:-}" ]]; then
         echo "❌ Error: --max-iterations requires a number argument" >&2
@@ -105,6 +114,16 @@ HELP_EOF
       fi
       MAX_ITERATIONS="$2"
       shift 2
+      ;;
+    --completion-promise=*)
+      # Handle --completion-promise=VALUE format
+      COMPLETION_PROMISE="${1#--completion-promise=}"
+      # Remove surrounding quotes if present
+      COMPLETION_PROMISE="${COMPLETION_PROMISE#\"}"
+      COMPLETION_PROMISE="${COMPLETION_PROMISE%\"}"
+      COMPLETION_PROMISE="${COMPLETION_PROMISE#\'}"
+      COMPLETION_PROMISE="${COMPLETION_PROMISE%\'}"
+      shift
       ;;
     --completion-promise)
       if [[ -z "${2:-}" ]]; then
@@ -157,6 +176,22 @@ if [[ -z "$PROMPT" ]]; then
   echo "" >&2
   echo "   For all options: /ralph-loop --help" >&2
   exit 1
+fi
+
+# Extract --completion-promise from prompt text if not explicitly set
+# Handles both --completion-promise=VALUE and --completion-promise VALUE formats
+if [[ "$COMPLETION_PROMISE" == "null" ]]; then
+  # Try --completion-promise=VALUE format (with optional quotes)
+  if [[ "$PROMPT" =~ --completion-promise=[\"\']*([^\"\'[:space:]]+)[\"\']* ]]; then
+    COMPLETION_PROMISE="${BASH_REMATCH[1]}"
+    # Remove from prompt
+    PROMPT=$(echo "$PROMPT" | sed -E 's/[[:space:]]*--completion-promise=[\"'\'']*[^\"'\''[:space:]]+[\"'\'']*[[:space:]]*/ /g' | sed 's/  */ /g' | sed 's/^ //;s/ $//')
+  # Try --completion-promise VALUE format (space separated)
+  elif [[ "$PROMPT" =~ --completion-promise[[:space:]]+[\"\']*([^\"\'[:space:]]+)[\"\']* ]]; then
+    COMPLETION_PROMISE="${BASH_REMATCH[1]}"
+    # Remove from prompt
+    PROMPT=$(echo "$PROMPT" | sed -E 's/[[:space:]]*--completion-promise[[:space:]]+[\"'\'']*[^\"'\''[:space:]]+[\"'\'']*[[:space:]]*/ /g' | sed 's/  */ /g' | sed 's/^ //;s/ $//')
+  fi
 fi
 
 # Get session ID from environment (set by SessionStart hook via CLAUDE_ENV_FILE)

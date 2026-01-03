@@ -38,16 +38,16 @@ export function SessionDetail({
         </div>
 
         {/* Completion Promise */}
-        {session.completion_promise && (
-          <div className="md:col-span-2">
-            <label className="text-sm font-medium text-gray-500">
-              Completion Promise
-            </label>
-            <p className="mt-1 text-claude-dark whitespace-pre-wrap">
-              {session.completion_promise}
-            </p>
-          </div>
-        )}
+        <div className="md:col-span-2">
+          <label className="text-sm font-medium text-gray-500">
+            Completion Promise
+          </label>
+          <p className="mt-1 text-claude-dark whitespace-pre-wrap">
+            {session.completion_promise || (
+              <span className="text-gray-400 italic">None set</span>
+            )}
+          </p>
+        </div>
 
         {/* Project Path */}
         <div>
@@ -81,9 +81,10 @@ export function SessionDetail({
             Iterations
           </label>
           <p className="mt-1 text-claude-dark">
-            {session.iterations !== undefined
+            {/* Show N/A only when iterations is truly unknown (null/undefined), 0 is valid */}
+            {session.iterations != null
               ? `${session.iterations} / ${session.max_iterations}`
-              : `0 / ${session.max_iterations}`}
+              : `N/A`}
           </p>
         </div>
 

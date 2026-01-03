@@ -15,8 +15,110 @@ const LOG_FILE = join(
   'sessions.jsonl'
 );
 
+/**
+ * Extract --completion-promise=XXX from task text.
+ * Returns { task: string (cleaned), completionPromise: string | null }
+ */
+function extractCompletionPromiseFromTask(task: string | undefined): {
+  task: string | undefined;
+  completionPromise: string | null;
+} {
+  if (!task) {
+    return { task, completionPromise: null };
+  }
+
+  // Match --completion-promise=VALUE (with or without quotes)
+  // Handles: --completion-promise=COMPLETE, --completion-promise="COMPLETE", --completion-promise='COMPLETE'
+  const match = task.match(/--completion-promise=["']?([^"'\s]+)["']?/);
+
+  if (!match) {
+    return { task, completionPromise: null };
+  }
+
+  const completionPromise = match[1];
+  // Remove the --completion-promise=XXX from task, trim extra whitespace
+  const cleanedTask = task
+    .replace(/\s*--completion-promise=["']?[^"'\s]+["']?\s*/g, ' ')
+    .trim();
+
+  return { task: cleanedTask, completionPromise };
+}
+
 export function getLogFilePath(): string {
   return LOG_FILE;
+}
+
+/**
+ * Parse iteration from file content.
+ * Returns null if content is malformed or incomplete.
+ */
+function parseIterationFromContent(content: string): number | null {
+  // Validate complete YAML frontmatter structure
+  // Must start with --- and have closing ---
+  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!frontmatterMatch) {
+    return null;
+  }
+
+  const frontmatter = frontmatterMatch[1];
+
+  // Validate frontmatter has required fields (indicates complete write)
+  if (
+    !frontmatter.includes('active:') ||
+    !frontmatter.includes('session_id:')
+  ) {
+    return null; // Incomplete/corrupted frontmatter
+  }
+
+  const iterationMatch = frontmatter.match(/^iteration:\s*(\d+)/m);
+  if (!iterationMatch) {
+    return null;
+  }
+
+  return parseInt(iterationMatch[1], 10);
+}
+
+/**
+ * Read current iteration from state file for active sessions.
+ * State file has YAML frontmatter with iteration field.
+ * Uses retry with validation to handle potential race conditions
+ * when the stop hook is writing to the file simultaneously.
+ */
+export function readIterationFromStateFile(
+  stateFilePath: string,
+  maxRetries = 2
+): number | null {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      if (!existsSync(stateFilePath)) {
+        return null;
+      }
+
+      const content = readFileSync(stateFilePath, 'utf-8');
+      const iteration = parseIterationFromContent(content);
+
+      if (iteration !== null) {
+        return iteration;
+      }
+
+      // Content was malformed, wait briefly and retry
+      if (attempt < maxRetries - 1) {
+        // Small delay before retry (10ms) to let write complete
+        const start = Date.now();
+        while (Date.now() - start < 10) {
+          // Busy wait - Bun doesn't have sync sleep
+        }
+      }
+    } catch {
+      // File read error, try again
+      if (attempt < maxRetries - 1) {
+        continue;
+      }
+      return null;
+    }
+  }
+
+  return null;
 }
 
 export function parseLogFile(): LogEntry[] {
@@ -88,6 +190,18 @@ export function mergeSessions(entries: LogEntry[]): Session[] {
       status = 'active';
     }
 
+    // For active sessions, read current iteration from state file
+    let iterations: number | null = completion?.iterations ?? null;
+    if (isActive && start.state_file_path) {
+      iterations = readIterationFromStateFile(start.state_file_path);
+    }
+
+    // Extract completion promise from task if not explicitly set
+    const { task: cleanedTask, completionPromise: extractedPromise } =
+      extractCompletionPromiseFromTask(start.task);
+    const completionPromise = start.completion_promise || extractedPromise;
+    const task = cleanedTask ?? start.task;
+
     sessions.push({
       session_id,
       status,
@@ -95,13 +209,13 @@ export function mergeSessions(entries: LogEntry[]): Session[] {
       project: start.project,
       project_name: start.project_name,
       state_file_path: start.state_file_path,
-      task: start.task,
+      task,
       started_at: start.started_at,
       ended_at: completion?.ended_at ?? null,
       duration_seconds: durationSeconds,
-      iterations: completion?.iterations ?? null,
+      iterations,
       max_iterations: start.max_iterations,
-      completion_promise: start.completion_promise,
+      completion_promise: completionPromise,
       error_reason: completion?.error_reason ?? null,
     });
   }
