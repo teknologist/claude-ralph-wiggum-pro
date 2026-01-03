@@ -20,10 +20,14 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Allow pushing badge updates
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -37,7 +41,13 @@ jobs:
         run: bun run typecheck
 
       - name: Run tests
-        run: bun run test
+        id: tests
+        run: |
+          OUTPUT=$(bun run test 2>&1)
+          echo "$OUTPUT"
+          # Extract test count (e.g., "Tests  36 passed (36)")
+          TEST_COUNT=$(echo "$OUTPUT" | grep -oP 'Tests\s+\K\d+(?=\s+passed)' || echo "0")
+          echo "test_count=$TEST_COUNT" >> $GITHUB_OUTPUT
 
       - name: Run tests with coverage
         run: bun run test:coverage
@@ -64,6 +74,25 @@ jobs:
           name: coverage-badge
           path: ralph-dashboard/coverage/badge.svg
           retention-days: 30
+
+      - name: Update test count badge in README
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        working-directory: .
+        run: |
+          TEST_COUNT="${{ steps.tests.outputs.test_count }}"
+          echo "Updating test badge to $TEST_COUNT passing"
+          # Update the badge in README (matches: tests-XX_passing)
+          sed -i "s/tests-[0-9]*_passing/tests-${TEST_COUNT}_passing/g" ralph-dashboard/README.md
+          # Check if there are changes
+          if git diff --quiet ralph-dashboard/README.md; then
+            echo "No changes to README"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add ralph-dashboard/README.md
+            git commit -m "docs(ralph-dashboard): update test count badge to $TEST_COUNT"
+            git push
+          fi
 
   build:
     name: Build
