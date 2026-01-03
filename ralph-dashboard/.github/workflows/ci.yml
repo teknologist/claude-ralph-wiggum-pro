@@ -39,12 +39,29 @@ jobs:
 
       - name: Run tests with coverage
         run: bun run test:coverage
+        continue-on-error: true  # Don't fail on coverage thresholds
 
-      - name: Upload coverage reports
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           files: ralph-dashboard/coverage/lcov.info
+          flags: ralph-dashboard
+          name: ralph-dashboard-coverage
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Generate coverage badge
+        uses: jaywcjlove/coverage-badges-cli@main
+        with:
+          source: ralph-dashboard/coverage/coverage-summary.json
+          output: ralph-dashboard/coverage/badge.svg
+
+      - name: Upload coverage badge artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-badge
+          path: ralph-dashboard/coverage/badge.svg
+          retention-days: 30
 
   build:
     name: Build

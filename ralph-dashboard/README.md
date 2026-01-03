@@ -1,5 +1,7 @@
 # Ralph Dashboard
 
+[![CI](https://github.com/teknologist/claude-plugins-official/actions/workflows/ci.yml/badge.svg)](https://github.com/teknologist/claude-plugins-official/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/teknologist/claude-plugins-official/graph/badge.svg?flag=ralph-dashboard)](https://codecov.io/gh/teknologist/claude-plugins-official)
 [![npm version](https://img.shields.io/npm/v/ralph-dashboard?color=blue)](https://www.npmjs.com/package/ralph-dashboard)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Bun](https://img.shields.io/badge/Bun-1.0+-fbf0df?logo=bun&logoColor=black)](https://bun.sh/)

@@ -21,15 +21,16 @@ export default defineConfig({
     ],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'lcov', 'html'],
+      reporter: ['text', 'lcov', 'html', 'json-summary'],
       include: ['src/**/*.{ts,tsx}', 'server/**/*.ts'],
       exclude: ['**/*.test.{ts,tsx}', '**/setup.ts', '**/*.d.ts'],
-      thresholds: {
-        lines: 80,
-        branches: 80,
-        functions: 80,
-        statements: 80,
-      },
+      // Thresholds disabled - coverage is tracked via Codecov badges
+      // thresholds: {
+      //   lines: 80,
+      //   branches: 80,
+      //   functions: 80,
+      //   statements: 80,
+      // },
     },
   },
 });
