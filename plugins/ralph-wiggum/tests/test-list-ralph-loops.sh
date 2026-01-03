@@ -35,13 +35,15 @@ run_test() {
 
 # The list script extracted from the markdown command
 # This is the core logic we're testing
+# Uses find to avoid shell glob expansion errors in zsh when no files match
 run_list_script() {
   local dir="$1"
   cd "$dir"
 
   found=0
-  shopt -s nullglob
-  for f in .claude/ralph-loop.*.local.md; do
+  # Use find to avoid shell glob expansion errors when no files exist
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
     if [[ -f "$f" ]]; then
       found=1
       SESSION=$(basename "$f" | sed 's/ralph-loop\.\(.*\)\.local\.md/\1/')
@@ -79,7 +81,7 @@ run_list_script() {
       echo "FILE=$f"
       echo "---"
     fi
-  done
+  done < <(find .claude -maxdepth 1 -name 'ralph-loop.*.local.md' 2>/dev/null)
   if [[ $found -eq 0 ]]; then
     echo "NO_LOOPS_FOUND"
   fi
@@ -115,6 +117,27 @@ if [[ "$OUTPUT" == "NO_LOOPS_FOUND" ]]; then
   pass "Reports no loops when .claude doesn't exist"
 else
   fail "Should report NO_LOOPS_FOUND" "Got: $OUTPUT"
+  exit 1
+fi
+
+run_test "No loops found - .claude exists but no matching files (zsh glob safety)"
+# This test specifically validates the fix for zsh glob expansion errors
+# In zsh, `for f in pattern` throws "no matches found" if pattern doesn't match
+# The find-based approach should handle this gracefully
+mkdir -p "$TEST_DIR/project2b/.claude"
+# Add some non-matching files to ensure glob pattern specificity
+touch "$TEST_DIR/project2b/.claude/settings.json"
+touch "$TEST_DIR/project2b/.claude/other-file.md"
+OUTPUT=$(run_list_script "$TEST_DIR/project2b" 2>&1)
+
+if [[ "$OUTPUT" == "NO_LOOPS_FOUND" ]]; then
+  pass "No glob expansion error when no loops match"
+else
+  if echo "$OUTPUT" | grep -qi "no matches found\|parse error"; then
+    fail "Glob expansion error occurred (zsh compatibility issue)" "Got: $OUTPUT"
+  else
+    fail "Should report NO_LOOPS_FOUND" "Got: $OUTPUT"
+  fi
   exit 1
 fi
 

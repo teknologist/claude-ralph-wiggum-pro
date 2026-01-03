@@ -10,7 +10,9 @@ List all active Ralph loops in this project:
 
 ```!
 found=0
-for f in .claude/ralph-loop.*.local.md 2>/dev/null; do
+# Use find to avoid shell glob expansion errors when no files exist
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
   if [[ -f "$f" ]]; then
     found=1
     SESSION=$(basename "$f" | sed 's/ralph-loop\.\(.*\)\.local\.md/\1/')
@@ -48,7 +50,7 @@ for f in .claude/ralph-loop.*.local.md 2>/dev/null; do
     echo "FILE=$f"
     echo "---"
   fi
-done
+done < <(find .claude -maxdepth 1 -name 'ralph-loop.*.local.md' 2>/dev/null)
 if [[ $found -eq 0 ]]; then
   echo "NO_LOOPS_FOUND"
 fi
