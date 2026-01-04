@@ -47,12 +47,17 @@ test.describe('Ralph Dashboard', () => {
     // Click on Archived tab - use role button to be specific
     await page.getByRole('button', { name: /Archived/ }).click();
 
-    // Check that we're now on the archived tab
-    // The session table should still be visible
-    await expect(page.getByRole('table')).toBeVisible();
+    // Check that we're now on the archived tab - either table or empty state
+    const table = page.getByRole('table');
+    const emptyState = page.getByText('No archived loops yet');
+    await expect(table.or(emptyState)).toBeVisible();
 
     // Switch back to Active tab
     await page.getByRole('button', { name: /Active Loops/ }).click();
+
+    // Verify we're back on active tab - either table or empty state
+    const activeEmpty = page.getByText('No active loops');
+    await expect(table.or(activeEmpty)).toBeVisible();
   });
 
   test('API endpoint returns sessions', async ({ request }) => {
