@@ -1,0 +1,80 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- CHANGELOG.md to track all changes
+- Commit workflow documentation in CLAUDE.md
+
+## [2.1.0] - 2026-01-04
+
+### Changed
+- Refactored repository to focus exclusively on Ralph Wiggum plugin
+- Removed all other plugins (external_plugins/, plugins/* except ralph-wiggum)
+- Updated CLAUDE.md and README.md to reflect Ralph Wiggum focus
+
+### Fixed
+- Fixed critical quote stripping bug in stop-hook.sh (`\"\"` → `\"`)
+
+### Added
+- Comprehensive tests for promise detection and argument parsing
+- Security validation for session IDs (path traversal prevention)
+
+## [2.0.1] - 2026-01-03
+
+### Added
+- **Ralph Dashboard**: Web-based dashboard for monitoring and managing loops
+  - Real-time view of active and archived loops
+  - Cancel active loops from browser
+  - Statistics: success rates, durations, iteration counts
+  - Configurable port (`--port`) and host (`--host 0.0.0.0`)
+- Active loop tracking (loops logged when they start, not just complete)
+- Remote cancellation via dashboard
+- Permanent delete for archived sessions
+- CI coverage badges and automated test count updates
+- Comprehensive unit and e2e tests (98% coverage)
+
+### Fixed
+- Improved completion promise parsing (checks all assistant messages, not just last)
+- Dashboard reliability improvements
+- CI workflow location moved to root .github/workflows
+
+## [2.0.0] - 2026-01-02
+
+### Added
+- **Session Logging**: All loop sessions logged to `~/.claude/ralph-wiggum-logs/sessions.jsonl`
+- **`/ralph-stats` Command**: View historical loop data with filtering
+- Cancellation logging to session history
+- Atomic writes for log entries
+- jq dependency check with clear error message
+- Fork notice and enhancements section in README
+
+## [1.1.0] - 2026-01-01
+
+### Added
+- **Multi-Session Support**: Multiple Claude Code terminals can run independent loops
+- **Session-Scoped State Files**: `.claude/ralph-loop.{session_id}.local.md`
+- **SessionStart Hook**: Persists `CLAUDE_SESSION_ID` to environment
+- Confirmation prompts for `/cancel-ralph`
+- Comprehensive test suite for session isolation
+
+### Fixed
+- Zsh glob expansion errors in `/list-ralph-loops`
+- Zsh glob expansion errors in `/cancel-ralph`
+- Renamed marketplace to avoid impersonating official Anthropic plugin
+
+## [1.0.0] - Initial Fork
+
+Initial fork from [Anthropic Claude Code Plugins](https://github.com/anthropics/claude-code-plugins).
+
+### Features from Original
+- Basic Ralph loop functionality with Stop hook mechanism
+- Progress tracking with elapsed time
+- File-based prompts with `--prompt-file`
+- Loop management commands (`/list-ralph-loops`, `/cancel-ralph`)
+- Completion promise detection

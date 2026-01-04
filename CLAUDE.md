@@ -158,3 +158,23 @@ Plugin tests are bash scripts with manual assertions. Dashboard has:
 - **E2E tests**: Playwright (Chromium)
 
 All tests run in CI with the test:e2e command requiring a built frontend (`bun run build` first).
+
+## Commit Workflow
+
+**IMPORTANT**: Every commit must update `CHANGELOG.md` at the repository root.
+
+1. Add your changes under `[Unreleased]` section
+2. Use categories: `Added`, `Changed`, `Fixed`, `Removed`, `Security`
+3. Follow [Keep a Changelog](https://keepachangelog.com/) format
+4. When releasing a version, move unreleased items to a new version section with date
+
+Example:
+```markdown
+## [Unreleased]
+
+### Added
+- New feature description
+
+### Fixed
+- Bug fix description
+```
