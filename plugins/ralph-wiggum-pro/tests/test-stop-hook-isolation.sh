@@ -49,8 +49,8 @@ cd "$TEST_DIR"
 create_transcript() {
   local text="${1:-I will work on this task now.}"
   cat > "$TEST_DIR/transcript.jsonl" <<EOF
-{"role":"user","message":{"content":[{"type":"text","text":"Start the task"}]}}
-{"role":"assistant","message":{"content":[{"type":"text","text":"$text"}]}}
+{"message":{"role":"user","content":[{"type":"text","text":"Start the task"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"$text"}]}}
 EOF
 }
 
@@ -282,8 +282,8 @@ SESSION="session-complete"
 create_state_file "$SESSION" 5 100 "TASK COMPLETE"
 # Create transcript with the promise in <promise> tags
 cat > "$TEST_DIR/transcript.jsonl" <<'EOF'
-{"role":"user","message":{"content":[{"type":"text","text":"Continue working"}]}}
-{"role":"assistant","message":{"content":[{"type":"text","text":"I have finished the task. <promise>TASK COMPLETE</promise>"}]}}
+{"message":{"role":"user","content":[{"type":"text","text":"Continue working"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"I have finished the task. <promise>TASK COMPLETE</promise>"}]}}
 EOF
 
 HOOK_INPUT=$(jq -n --arg sid "$SESSION" --arg tp "$TEST_DIR/transcript.jsonl" '{session_id: $sid, transcript_path: $tp, cwd: "."}')
@@ -308,8 +308,8 @@ SESSION="session-no-tags"
 create_state_file "$SESSION" 5 100 "DONE"
 # Promise text present but NOT in tags
 cat > "$TEST_DIR/transcript.jsonl" <<'EOF'
-{"role":"user","message":{"content":[{"type":"text","text":"Continue"}]}}
-{"role":"assistant","message":{"content":[{"type":"text","text":"The task is DONE now."}]}}
+{"message":{"role":"user","content":[{"type":"text","text":"Continue"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"The task is DONE now."}]}}
 EOF
 
 HOOK_INPUT=$(jq -n --arg sid "$SESSION" --arg tp "$TEST_DIR/transcript.jsonl" '{session_id: $sid, transcript_path: $tp, cwd: "."}')
@@ -327,8 +327,8 @@ run_test "Wrong promise text in tags → still blocks"
 SESSION="session-wrong-promise"
 create_state_file "$SESSION" 5 100 "CORRECT PROMISE"
 cat > "$TEST_DIR/transcript.jsonl" <<'EOF'
-{"role":"user","message":{"content":[{"type":"text","text":"Continue"}]}}
-{"role":"assistant","message":{"content":[{"type":"text","text":"<promise>WRONG PROMISE</promise>"}]}}
+{"message":{"role":"user","content":[{"type":"text","text":"Continue"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"<promise>WRONG PROMISE</promise>"}]}}
 EOF
 
 HOOK_INPUT=$(jq -n --arg sid "$SESSION" --arg tp "$TEST_DIR/transcript.jsonl" '{session_id: $sid, transcript_path: $tp, cwd: "."}')
@@ -360,8 +360,8 @@ Build something.
 EOF
 
 cat > "$TEST_DIR/transcript.jsonl" <<'EOF'
-{"role":"user","message":{"content":[{"type":"text","text":"Continue"}]}}
-{"role":"assistant","message":{"content":[{"type":"text","text":"<promise>ANYTHING</promise>"}]}}
+{"message":{"role":"user","content":[{"type":"text","text":"Continue"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"<promise>ANYTHING</promise>"}]}}
 EOF
 
 HOOK_INPUT=$(jq -n --arg sid "$SESSION" --arg tp "$TEST_DIR/transcript.jsonl" '{session_id: $sid, transcript_path: $tp, cwd: "."}')
@@ -379,8 +379,8 @@ run_test "Promise with special characters matches exactly"
 SESSION="session-special-promise"
 create_state_file "$SESSION" 5 100 "Done: 100% complete!"
 cat > "$TEST_DIR/transcript.jsonl" <<'EOF'
-{"role":"user","message":{"content":[{"type":"text","text":"Continue"}]}}
-{"role":"assistant","message":{"content":[{"type":"text","text":"<promise>Done: 100% complete!</promise>"}]}}
+{"message":{"role":"user","content":[{"type":"text","text":"Continue"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"<promise>Done: 100% complete!</promise>"}]}}
 EOF
 
 HOOK_INPUT=$(jq -n --arg sid "$SESSION" --arg tp "$TEST_DIR/transcript.jsonl" '{session_id: $sid, transcript_path: $tp, cwd: "."}')
@@ -402,9 +402,9 @@ SESSION="session-promise-then-tool"
 create_state_file "$SESSION" 5 100 "TASK COMPLETE"
 # Realistic scenario: Claude outputs promise, then makes a tool call
 cat > "$TEST_DIR/transcript.jsonl" <<'EOF'
-{"role":"user","message":{"content":[{"type":"text","text":"Continue working"}]}}
-{"role":"assistant","message":{"content":[{"type":"text","text":"I have completed the task. <promise>TASK COMPLETE</promise>"}]}}
-{"role":"assistant","message":{"content":[{"type":"tool_use","id":"toolu_123","name":"Write","input":{"file_path":"/tmp/test.txt","content":"done"}}]}}
+{"message":{"role":"user","content":[{"type":"text","text":"Continue working"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"I have completed the task. <promise>TASK COMPLETE</promise>"}]}}
+{"message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_123","name":"Write","input":{"file_path":"/tmp/test.txt","content":"done"}}]}}
 EOF
 
 HOOK_INPUT=$(jq -n --arg sid "$SESSION" --arg tp "$TEST_DIR/transcript.jsonl" '{session_id: $sid, transcript_path: $tp, cwd: "."}')
@@ -421,9 +421,9 @@ run_test "Promise in first message, more text in later messages → still detect
 SESSION="session-promise-first"
 create_state_file "$SESSION" 5 100 "DONE"
 cat > "$TEST_DIR/transcript.jsonl" <<'EOF'
-{"role":"user","message":{"content":[{"type":"text","text":"Start"}]}}
-{"role":"assistant","message":{"content":[{"type":"text","text":"<promise>DONE</promise> Task completed."}]}}
-{"role":"assistant","message":{"content":[{"type":"text","text":"Here are the final results..."}]}}
+{"message":{"role":"user","content":[{"type":"text","text":"Start"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"<promise>DONE</promise> Task completed."}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"Here are the final results..."}]}}
 EOF
 
 HOOK_INPUT=$(jq -n --arg sid "$SESSION" --arg tp "$TEST_DIR/transcript.jsonl" '{session_id: $sid, transcript_path: $tp, cwd: "."}')
@@ -440,10 +440,10 @@ run_test "Final message is tool-only (no text) → still finds promise in earlie
 SESSION="session-tool-only-final"
 create_state_file "$SESSION" 5 100 "COMPLETE"
 cat > "$TEST_DIR/transcript.jsonl" <<'EOF'
-{"role":"user","message":{"content":[{"type":"text","text":"Continue"}]}}
-{"role":"assistant","message":{"content":[{"type":"text","text":"Task is <promise>COMPLETE</promise>"}]}}
-{"role":"assistant","message":{"content":[{"type":"tool_use","id":"abc","name":"Bash","input":{"command":"echo done"}}]}}
-{"role":"assistant","message":{"content":[{"type":"tool_result","tool_use_id":"abc","content":"done"}]}}
+{"message":{"role":"user","content":[{"type":"text","text":"Continue"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"Task is <promise>COMPLETE</promise>"}]}}
+{"message":{"role":"assistant","content":[{"type":"tool_use","id":"abc","name":"Bash","input":{"command":"echo done"}}]}}
+{"message":{"role":"assistant","content":[{"type":"tool_result","tool_use_id":"abc","content":"done"}]}}
 EOF
 
 HOOK_INPUT=$(jq -n --arg sid "$SESSION" --arg tp "$TEST_DIR/transcript.jsonl" '{session_id: $sid, transcript_path: $tp, cwd: "."}')
@@ -462,14 +462,14 @@ fi
 
 run_test "jq filter extracts text from correct transcript format"
 # This directly tests the jq filter logic that was buggy
-# Transcript format: {"role":"assistant", "message":{"content":[...]}}
-# NOT: {"message":{"role":"assistant", ...}}
+# Transcript format: {"message":{"role":"assistant", "content":[...]}}
+# Role is inside message object, not at top level
 TEST_TRANSCRIPT=$(cat <<'EOF'
-{"role":"assistant","message":{"content":[{"type":"text","text":"Hello world"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"Hello world"}]}}
 EOF
 )
 
-RESULT=$(echo "$TEST_TRANSCRIPT" | jq -rs '[.[] | select(.role == "assistant") | .message.content[]? | select(.type == "text") | .text] | join("\n")')
+RESULT=$(echo "$TEST_TRANSCRIPT" | jq -rs '[.[] | select(.message.role == "assistant") | .message.content[]? | select(.type == "text") | .text] | join("\n")')
 
 if [[ "$RESULT" == "Hello world" ]]; then
   pass "jq filter correctly extracts text from transcript format"
@@ -480,11 +480,11 @@ fi
 
 run_test "jq filter handles mixed content (text + tool_use)"
 TEST_TRANSCRIPT=$(cat <<'EOF'
-{"role":"assistant","message":{"content":[{"type":"text","text":"First"},{"type":"tool_use","id":"x","name":"Bash","input":{}},{"type":"text","text":"Second"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"First"},{"type":"tool_use","id":"x","name":"Bash","input":{}},{"type":"text","text":"Second"}]}}
 EOF
 )
 
-RESULT=$(echo "$TEST_TRANSCRIPT" | jq -rs '[.[] | select(.role == "assistant") | .message.content[]? | select(.type == "text") | .text] | join("\n")')
+RESULT=$(echo "$TEST_TRANSCRIPT" | jq -rs '[.[] | select(.message.role == "assistant") | .message.content[]? | select(.type == "text") | .text] | join("\n")')
 
 if [[ "$RESULT" == $'First\nSecond' ]]; then
   pass "jq filter extracts all text blocks, skips tool_use"
@@ -648,8 +648,8 @@ run_test "Empty assistant message in transcript → stops gracefully"
 SESSION="session-empty-msg"
 create_state_file "$SESSION" 5 100 "DONE"
 cat > "$TEST_DIR/transcript.jsonl" <<'EOF'
-{"role":"user","message":{"content":[{"type":"text","text":"Start"}]}}
-{"role":"assistant","message":{"content":[]}}
+{"message":{"role":"user","content":[{"type":"text","text":"Start"}]}}
+{"message":{"role":"assistant","content":[]}}
 EOF
 
 HOOK_INPUT=$(jq -n --arg sid "$SESSION" --arg tp "$TEST_DIR/transcript.jsonl" '{session_id: $sid, transcript_path: $tp, cwd: "."}')
@@ -666,8 +666,8 @@ run_test "No assistant messages in transcript → stops gracefully"
 SESSION="session-no-assistant"
 create_state_file "$SESSION" 5 100 "DONE"
 cat > "$TEST_DIR/transcript.jsonl" <<'EOF'
-{"role":"user","message":{"content":[{"type":"text","text":"Start"}]}}
-{"role":"user","message":{"content":[{"type":"text","text":"Continue"}]}}
+{"message":{"role":"user","content":[{"type":"text","text":"Start"}]}}
+{"message":{"role":"user","content":[{"type":"text","text":"Continue"}]}}
 EOF
 
 HOOK_INPUT=$(jq -n --arg sid "$SESSION" --arg tp "$TEST_DIR/transcript.jsonl" '{session_id: $sid, transcript_path: $tp, cwd: "."}')

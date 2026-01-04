@@ -168,10 +168,10 @@ if [[ "$COMPLETION_PROMISE" != "null" ]] && [[ -n "$COMPLETION_PROMISE" ]]; then
   # This handles cases where Claude outputs the promise but then the final message
   # is a tool call with no text content
   # Using jq -s (slurp) to efficiently process all JSONL lines in one pass
-  # Note: Transcript format is {"role":"assistant", "message":{"content":[...]}}
-  # Role is at top level, content is inside message
+  # Note: Transcript format is {"message":{"role":"assistant", "content":[...]}}
+  # Role is inside message object, not at top level
   ALL_ASSISTANT_TEXT=$(jq -rs '
-    [.[] | select(.role == "assistant") | .message.content[]? | select(.type == "text") | .text] | join("\n")
+    [.[] | select(.message.role == "assistant") | .message.content[]? | select(.type == "text") | .text] | join("\n")
   ' "$TRANSCRIPT_PATH" 2>/dev/null || echo "")
 
   # Extract text from <promise> tags using Perl for multiline support

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.11] - 2026-01-04
+
+### Fixed
+- **Critical: Completion promise detection broken** - Stop hook used incorrect jq path `.role` instead of `.message.role` to find assistant messages in transcript, causing `<promise>` tags to never be detected and loops to run forever
+- Updated test fixtures to use correct Claude Code transcript format `{"message":{"role":"assistant",...}}` instead of incorrect `{"role":"assistant","message":{...}}`
+
 ## [2.0.10] - 2026-01-04
 
 ### Added
