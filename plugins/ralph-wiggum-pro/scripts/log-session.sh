@@ -188,7 +188,7 @@ else
   # Calculate duration in seconds
   DURATION_SECONDS=0
   if [[ -n "$STARTED_AT" ]]; then
-    START_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$STARTED_AT" "+%s" 2>/dev/null || date -d "$STARTED_AT" "+%s" 2>/dev/null || echo "")
+    START_EPOCH=$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$STARTED_AT" "+%s" 2>/dev/null || date -u -d "$STARTED_AT" "+%s" 2>/dev/null || echo "")
     if [[ -n "$START_EPOCH" ]]; then
       END_EPOCH=$(date -u "+%s")
       DURATION_SECONDS=$((END_EPOCH - START_EPOCH))

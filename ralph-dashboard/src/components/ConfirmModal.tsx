@@ -108,7 +108,7 @@ export function ConfirmModal({
         aria-modal="true"
         aria-labelledby={titleId.current}
         aria-describedby={messageId.current}
-        className="relative bg-white rounded-t-lg sm:rounded-lg shadow-xl max-w-md w-full mx-4 p-6 pb-safe"
+        className="relative bg-white rounded-t-lg sm:rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
         onKeyDown={handleKeyDown}
       >
         <h2

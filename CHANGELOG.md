@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.13] - 2026-01-04
+
+### Fixed
+- **Documentation**: Updated README and help command to clarify that prompts must include `<promise>KEYWORD</promise>` instructions
+- **Documentation**: Removed misleading "go back to step" language - Ralph naturally iterates without explicit loop instructions
+- **Documentation**: Single-word `--completion-promise` values no longer shown with unnecessary quotes
+
+## [2.0.12] - 2026-01-04
+
+### Fixed
+- **Duration calculation timezone bug**: `log-session.sh` now uses `-u` flag when parsing UTC timestamps, fixing incorrect durations (e.g., showing 1h 4m instead of 5m)
+- **Dashboard modal padding**: Removed inconsistent `pb-safe` from ConfirmModal for consistent 24px padding on all sides
+
 ## [2.0.11] - 2026-01-04
 
 ### Fixed

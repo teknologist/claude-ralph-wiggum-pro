@@ -37,21 +37,24 @@ Start a Ralph loop in your current session.
 
 **Usage:**
 ```
-/ralph-loop "Refactor the cache layer" --max-iterations 20
-/ralph-loop "Add tests" --completion-promise "TESTS COMPLETE"
+/ralph-loop "Refactor the cache layer. Output <promise>DONE</promise> when complete." --completion-promise DONE --max-iterations 20
+/ralph-loop "Add tests. Output <promise>TESTS COMPLETE</promise> when all pass." --completion-promise "TESTS COMPLETE"
 ```
 
 **Options:**
 - `--max-iterations <n>` - Max iterations before auto-stop
-- `--completion-promise <text>` - Promise phrase to signal completion
+- `--completion-promise <text>` - Keyword to detect inside `<promise>` tags (quotes optional for single words)
+
+**Critical**: Your prompt MUST include instructions to output `<promise>KEYWORD</promise>` when done. The `--completion-promise` specifies what KEYWORD to look for inside those tags.
 
 **How it works:**
 1. Creates `.claude/.ralph-loop.local.md` state file
 2. You work on the task
 3. When you try to exit, stop hook intercepts
-4. Same prompt fed back
-5. You see your previous work
-6. Continues until promise detected or max iterations
+4. If `<promise>KEYWORD</promise>` found → loop ends
+5. Otherwise, same prompt fed back
+6. You see your previous work
+7. Continues until promise detected or max iterations
 
 ---
 
@@ -128,7 +131,7 @@ The "loop" doesn't mean Claude talks to itself. It means:
 ### Interactive Bug Fix
 
 ```
-/ralph-loop "Fix the token refresh logic in auth.ts. Output <promise>FIXED</promise> when all tests pass." --completion-promise "FIXED" --max-iterations 10
+/ralph-loop "Fix the token refresh logic in auth.ts. Output <promise>FIXED</promise> when all tests pass." --completion-promise FIXED --max-iterations 10
 ```
 
 You'll see Ralph:

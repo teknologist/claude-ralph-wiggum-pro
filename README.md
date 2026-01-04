@@ -57,15 +57,17 @@ This plugin implements Ralph using a **Stop hook** that intercepts Claude's exit
 
 ```bash
 # You run ONCE:
-/ralph-loop "Your task description" --completion-promise "DONE"
+/ralph-loop "Your task description. Output <promise>DONE</promise> when complete." --completion-promise DONE
 
 # Then Claude Code automatically:
 # 1. Works on the task
 # 2. Tries to exit
-# 3. Stop hook blocks exit
+# 3. Stop hook blocks exit (unless <promise>DONE</promise> was output)
 # 4. Stop hook feeds the SAME prompt back
 # 5. Repeat until completion
 ```
+
+**Important**: Your prompt must instruct Claude to output `<promise>KEYWORD</promise>` when done. The `--completion-promise` option tells the stop hook what KEYWORD to look for inside those tags.
 
 The loop happens **inside your current session** - you don't need external bash loops. The Stop hook in `hooks/stop-hook.sh` creates the self-referential feedback loop by blocking normal session exit.
 
@@ -78,7 +80,7 @@ This creates a **self-referential feedback loop** where:
 ## Quick Start
 
 ```bash
-/ralph-loop "Build a REST API for todos. Requirements: CRUD operations, input validation, tests. Output <promise>COMPLETE</promise> when done." --completion-promise "COMPLETE" --max-iterations 50
+/ralph-loop "Build a REST API for todos. Requirements: CRUD operations, input validation, tests. Output <promise>COMPLETE</promise> when done." --completion-promise COMPLETE --max-iterations 50
 ```
 
 Claude will:
@@ -96,29 +98,31 @@ Start a Ralph loop in your current session. Each session gets its own isolated l
 
 **Usage:**
 ```bash
-# Inline prompt
-/ralph-loop "<prompt>" --max-iterations <n> --completion-promise "<text>"
+# Inline prompt (must include <promise> instruction!)
+/ralph-loop "<prompt with instruction to output <promise>KEYWORD</promise>>" --completion-promise KEYWORD
 
 # File-based prompt (for complex tasks)
-/ralph-loop --prompt-file ./prompts/my-task.md --max-iterations 50 --completion-promise "DONE"
+/ralph-loop --prompt-file ./prompts/my-task.md --max-iterations 50 --completion-promise DONE
 ```
 
 **Options:**
 - `--prompt-file <path>` - Read prompt from a markdown file instead of inline
 - `--max-iterations <n>` - Stop after N iterations (default: unlimited)
-- `--completion-promise <text>` - Phrase that signals completion (use quotes for multi-word)
+- `--completion-promise <text>` - Keyword to detect inside `<promise>` tags (quotes optional for single words)
 
 **Examples:**
 ```bash
-# Simple inline prompt
-/ralph-loop "Build a REST API for todos" --max-iterations 20
+# Simple inline prompt - note the <promise> instruction in the prompt
+/ralph-loop "Build a REST API for todos. Output <promise>DONE</promise> when complete." --completion-promise DONE --max-iterations 20
 
-# Complex prompt from file
-/ralph-loop --prompt-file ./tasks/api-spec.md --completion-promise "COMPLETE"
+# Complex prompt from file (file should contain <promise> instructions)
+/ralph-loop --prompt-file ./tasks/api-spec.md --completion-promise COMPLETE
 
-# Mixed: file prompt with options
+# Multi-word promise (requires quotes)
 /ralph-loop --prompt-file task.md --max-iterations 50 --completion-promise "ALL TESTS PASS"
 ```
+
+**Critical**: Your prompt (inline or in file) MUST instruct Claude to output `<promise>KEYWORD</promise>` when done. The stop hook looks for this exact XML tag pattern.
 
 ### /list-ralph-loops
 
@@ -222,7 +226,11 @@ Open http://localhost:3847 in your browser to view the dashboard.
 
 ## Prompt Writing Best Practices
 
-### 1. Clear Completion Criteria
+**The key to successful Ralph loops is a clear, stepped workflow with explicit success criteria.**
+
+### 1. Always Include Promise Instructions
+
+Your prompt MUST tell Claude to output `<promise>KEYWORD</promise>` when done:
 
 ❌ Bad: "Build a todo API and make it good."
 
@@ -230,28 +238,49 @@ Open http://localhost:3847 in your browser to view the dashboard.
 ```markdown
 Build a REST API for todos.
 
-When complete:
+Requirements:
 - All CRUD endpoints working
 - Input validation in place
 - Tests passing (coverage > 80%)
 - README with API docs
-- Output: <promise>COMPLETE</promise>
+
+When ALL requirements are met, output: <promise>COMPLETE</promise>
 ```
 
-### 2. Incremental Goals
+### 2. Clear Stepped Workflow
+
+Define explicit steps for Claude to follow. This is crucial for successful outcomes:
 
 ❌ Bad: "Create a complete e-commerce platform."
 
 ✅ Good:
 ```markdown
-Phase 1: User authentication (JWT, tests)
-Phase 2: Product catalog (list/search, tests)
-Phase 3: Shopping cart (add/remove, tests)
+Build an e-commerce platform following these steps IN ORDER:
 
-Output <promise>COMPLETE</promise> when all phases done.
+STEP 1: User Authentication
+- Implement JWT auth with login/register
+- Write tests for auth endpoints
+- Verify tests pass before proceeding
+
+STEP 2: Product Catalog
+- Create product CRUD endpoints
+- Implement search functionality
+- Write and pass tests
+
+STEP 3: Shopping Cart
+- Implement add/remove/update cart
+- Write and pass tests
+
+WORKFLOW:
+1. Complete each step fully before moving to next
+2. Run tests after each implementation
+3. Fix any failures before proceeding
+4. When ALL steps complete and tests pass, output: <promise>COMPLETE</promise>
 ```
 
-### 3. Self-Correction
+### 3. Self-Correction Through Iteration
+
+Ralph naturally iterates - Claude sees its previous work and continues. No explicit "go back" instructions needed:
 
 ❌ Bad: "Write code for feature X."
 
@@ -264,7 +293,7 @@ Implement feature X following TDD:
 4. If any fail, debug and fix
 5. Refactor if needed
 6. Repeat until all green
-7. Output: <promise>COMPLETE</promise>
+7. When all tests successfully pass, output: <promise>COMPLETE</promise>
 ```
 
 ### 4. Escape Hatches
@@ -273,16 +302,19 @@ Always use `--max-iterations` as a safety net to prevent infinite loops on impos
 
 ```bash
 # Recommended: Always set a reasonable iteration limit
-/ralph-loop "Try to implement feature X" --max-iterations 20
-
-# In your prompt, include what to do if stuck:
-# "After 15 iterations, if not complete:
-#  - Document what's blocking progress
-#  - List what was attempted
-#  - Suggest alternative approaches"
+/ralph-loop "Implement feature X. Output <promise>DONE</promise> when complete." --completion-promise DONE --max-iterations 20
 ```
 
-**Note**: The `--completion-promise` uses exact string matching, so you cannot use it for multiple completion conditions (like "SUCCESS" vs "BLOCKED"). Always rely on `--max-iterations` as your primary safety mechanism.
+In your prompt, you can also include fallback instructions:
+```markdown
+If after multiple iterations the task seems impossible:
+- Document what's blocking progress
+- List what was attempted
+- Suggest alternative approaches
+- Output: <promise>BLOCKED</promise>
+```
+
+**Note**: The `--completion-promise` looks for exact text inside `<promise>` tags. You cannot use multiple completion keywords - pick one and use `--max-iterations` as your primary safety mechanism.
 
 ## Philosophy
 
