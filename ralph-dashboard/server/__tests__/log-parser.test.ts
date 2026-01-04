@@ -22,6 +22,7 @@ describe('log-parser', () => {
 
     it('should create active session from start entry only', () => {
       const startEntry: StartLogEntry = {
+        loop_id: 'loop-test-123',
         session_id: 'test-123',
         status: 'active',
         project: '/Users/test/project',
@@ -38,7 +39,7 @@ describe('log-parser', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].status).toBe('active');
-      expect(result[0].session_id).toBe('test-123');
+      expect(result[0].loop_id).toBe('loop-test-123');
       expect(result[0].project_name).toBe('project');
       expect(result[0].iterations).toBeNull();
       expect(result[0].ended_at).toBeNull();
@@ -49,6 +50,7 @@ describe('log-parser', () => {
       const endedAt = '2024-01-15T10:15:00Z';
 
       const startEntry: StartLogEntry = {
+        loop_id: 'loop-test-456',
         session_id: 'test-456',
         status: 'active',
         project: '/Users/test/project',
@@ -62,6 +64,7 @@ describe('log-parser', () => {
       };
 
       const completionEntry: CompletionLogEntry = {
+        loop_id: 'loop-test-456',
         session_id: 'test-456',
         status: 'completed',
         outcome: 'success',
@@ -81,6 +84,7 @@ describe('log-parser', () => {
 
     it('should handle cancelled sessions', () => {
       const startEntry: StartLogEntry = {
+        loop_id: 'loop-cancelled-123',
         session_id: 'cancelled-123',
         status: 'active',
         project: '/Users/test/project',
@@ -94,6 +98,7 @@ describe('log-parser', () => {
       };
 
       const completionEntry: CompletionLogEntry = {
+        loop_id: 'loop-cancelled-123',
         session_id: 'cancelled-123',
         status: 'completed',
         outcome: 'cancelled',
@@ -110,6 +115,7 @@ describe('log-parser', () => {
 
     it('should handle error sessions', () => {
       const startEntry: StartLogEntry = {
+        loop_id: 'loop-error-123',
         session_id: 'error-123',
         status: 'active',
         project: '/Users/test/project',
@@ -123,6 +129,7 @@ describe('log-parser', () => {
       };
 
       const completionEntry: CompletionLogEntry = {
+        loop_id: 'loop-error-123',
         session_id: 'error-123',
         status: 'completed',
         outcome: 'error',
@@ -142,6 +149,7 @@ describe('log-parser', () => {
     it('should sort active sessions first', () => {
       const entries: LogEntry[] = [
         {
+          loop_id: 'loop-completed-1',
           session_id: 'completed-1',
           status: 'active',
           project: '/test',
@@ -153,6 +161,7 @@ describe('log-parser', () => {
           completion_promise: null,
         } as StartLogEntry,
         {
+          loop_id: 'loop-completed-1',
           session_id: 'completed-1',
           status: 'completed',
           outcome: 'success',
@@ -161,6 +170,7 @@ describe('log-parser', () => {
           iterations: 5,
         } as CompletionLogEntry,
         {
+          loop_id: 'loop-active-1',
           session_id: 'active-1',
           status: 'active',
           project: '/test2',
@@ -176,14 +186,15 @@ describe('log-parser', () => {
       const result = mergeSessions(entries);
 
       expect(result).toHaveLength(2);
-      expect(result[0].session_id).toBe('active-1');
+      expect(result[0].loop_id).toBe('loop-active-1');
       expect(result[0].status).toBe('active');
-      expect(result[1].session_id).toBe('completed-1');
+      expect(result[1].loop_id).toBe('loop-completed-1');
     });
 
     it('should sort completed sessions by date descending', () => {
       const entries: LogEntry[] = [
         {
+          loop_id: 'loop-old-session',
           session_id: 'old-session',
           status: 'active',
           project: '/test',
@@ -195,6 +206,7 @@ describe('log-parser', () => {
           completion_promise: null,
         } as StartLogEntry,
         {
+          loop_id: 'loop-old-session',
           session_id: 'old-session',
           status: 'completed',
           outcome: 'success',
@@ -203,6 +215,7 @@ describe('log-parser', () => {
           iterations: 5,
         } as CompletionLogEntry,
         {
+          loop_id: 'loop-new-session',
           session_id: 'new-session',
           status: 'active',
           project: '/test',
@@ -214,6 +227,7 @@ describe('log-parser', () => {
           completion_promise: null,
         } as StartLogEntry,
         {
+          loop_id: 'loop-new-session',
           session_id: 'new-session',
           status: 'completed',
           outcome: 'success',
@@ -226,13 +240,14 @@ describe('log-parser', () => {
       const result = mergeSessions(entries);
 
       expect(result).toHaveLength(2);
-      expect(result[0].session_id).toBe('new-session');
-      expect(result[1].session_id).toBe('old-session');
+      expect(result[0].loop_id).toBe('loop-new-session');
+      expect(result[1].loop_id).toBe('loop-old-session');
     });
 
     it('should skip entries without start record', () => {
       // This shouldn't happen in practice but good to test
       const completionOnly: CompletionLogEntry = {
+        loop_id: 'loop-orphan-123',
         session_id: 'orphan-123',
         status: 'completed',
         outcome: 'success',
@@ -248,6 +263,7 @@ describe('log-parser', () => {
 
     it('should extract completion promise from task', () => {
       const startEntry: StartLogEntry = {
+        loop_id: 'loop-test-promise',
         session_id: 'test-promise',
         status: 'active',
         project: '/Users/test/project',
@@ -267,6 +283,7 @@ describe('log-parser', () => {
 
     it('should extract quoted completion promise from task', () => {
       const startEntry: StartLogEntry = {
+        loop_id: 'loop-test-quoted',
         session_id: 'test-quoted',
         status: 'active',
         project: '/Users/test/project',
@@ -285,6 +302,7 @@ describe('log-parser', () => {
 
     it('should prefer explicit completion_promise over extracted', () => {
       const startEntry: StartLogEntry = {
+        loop_id: 'loop-test-explicit',
         session_id: 'test-explicit',
         status: 'active',
         project: '/Users/test/project',
@@ -303,6 +321,7 @@ describe('log-parser', () => {
 
     it('should handle max_iterations outcome', () => {
       const startEntry: StartLogEntry = {
+        loop_id: 'loop-max-iter-123',
         session_id: 'max-iter-123',
         status: 'active',
         project: '/test',
@@ -315,6 +334,7 @@ describe('log-parser', () => {
       };
 
       const completionEntry: CompletionLogEntry = {
+        loop_id: 'loop-max-iter-123',
         session_id: 'max-iter-123',
         status: 'completed',
         outcome: 'max_iterations',
@@ -326,6 +346,93 @@ describe('log-parser', () => {
       const result = mergeSessions([startEntry, completionEntry]);
 
       expect(result[0].status).toBe('max_iterations');
+    });
+
+    it('should handle legacy logs without loop_id (backward compatibility)', () => {
+      // Scenario: Old logs that used session_id as the key before loop_id was introduced
+      // These entries have no loop_id, so mergeSessions falls back to session_id
+      const startEntry: StartLogEntry = {
+        session_id: 'legacy-session-123',
+        status: 'active',
+        project: '/test/project',
+        project_name: 'test-project',
+        state_file_path: '/test/.claude/state.md',
+        task: 'Legacy task',
+        started_at: '2024-01-15T10:00:00Z',
+        max_iterations: 20,
+        completion_promise: 'DONE',
+      } as StartLogEntry; // Cast to bypass loop_id requirement for legacy test
+
+      const completionEntry: CompletionLogEntry = {
+        session_id: 'legacy-session-123',
+        status: 'completed',
+        outcome: 'success',
+        ended_at: '2024-01-15T10:30:00Z',
+        duration_seconds: 1800,
+        iterations: 5,
+      } as CompletionLogEntry;
+
+      const result = mergeSessions([startEntry, completionEntry]);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].status).toBe('success');
+      // loop_id should fall back to session_id
+      expect(result[0].loop_id).toBe('legacy-session-123');
+    });
+
+    it('should create two separate sessions when restarted with new loop_id', () => {
+      // Scenario: Loop cancelled, then restarted. Each gets a unique loop_id.
+      const firstStart: StartLogEntry = {
+        loop_id: 'loop-first-uuid',
+        session_id: 'same-session',
+        status: 'active',
+        project: '/test/project',
+        project_name: 'test-project',
+        state_file_path: '/test/.claude/state.md',
+        task: 'Original task',
+        started_at: '2024-01-15T10:00:00Z',
+        max_iterations: 20,
+        completion_promise: 'DONE',
+      };
+
+      const firstCompletion: CompletionLogEntry = {
+        loop_id: 'loop-first-uuid',
+        session_id: 'same-session',
+        status: 'completed',
+        outcome: 'cancelled',
+        ended_at: '2024-01-15T10:30:00Z',
+        duration_seconds: 1800,
+        iterations: 5,
+      };
+
+      // Restarted loop gets a NEW unique loop_id
+      const secondStart: StartLogEntry = {
+        loop_id: 'loop-second-uuid',
+        session_id: 'same-session', // Same session
+        status: 'active',
+        project: '/test/project',
+        project_name: 'test-project',
+        state_file_path: '/test/.claude/state.md',
+        task: 'Restarted task',
+        started_at: '2024-01-15T10:35:00Z',
+        max_iterations: 20,
+        completion_promise: 'DONE',
+      };
+
+      const result = mergeSessions([firstStart, firstCompletion, secondStart]);
+
+      // Should have TWO separate sessions - one cancelled, one active
+      expect(result).toHaveLength(2);
+
+      // Active session first (sorting)
+      expect(result[0].loop_id).toBe('loop-second-uuid');
+      expect(result[0].status).toBe('active');
+      expect(result[0].task).toBe('Restarted task');
+
+      // Cancelled session second
+      expect(result[1].loop_id).toBe('loop-first-uuid');
+      expect(result[1].status).toBe('cancelled');
+      expect(result[1].task).toBe('Original task');
     });
   });
 

@@ -6,6 +6,7 @@ import type { Session } from '../types';
 vi.mock('../services/log-parser');
 
 const createMockSession = (overrides: Partial<Session> = {}): Session => ({
+  loop_id: 'test-loop-1',
   session_id: 'test-session-1',
   status: 'active',
   project: '/path/to/project',

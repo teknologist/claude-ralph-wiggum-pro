@@ -1,6 +1,12 @@
 import { homedir } from 'os';
 import { join } from 'path';
-import { readFileSync, existsSync, writeFileSync, renameSync } from 'fs';
+import {
+  readFileSync,
+  existsSync,
+  writeFileSync,
+  renameSync,
+  unlinkSync,
+} from 'fs';
 import type {
   LogEntry,
   StartLogEntry,
@@ -144,14 +150,20 @@ export function parseLogFile(): LogEntry[] {
 }
 
 export function mergeSessions(entries: LogEntry[]): Session[] {
-  // Group entries by session_id
-  const sessionMap = new Map<
+  // Group entries by loop_id (primary key)
+  // Fallback to session_id for backward compatibility with old entries
+  const loopMap = new Map<
     string,
     { start?: StartLogEntry; completion?: CompletionLogEntry }
   >();
 
   for (const entry of entries) {
-    const existing = sessionMap.get(entry.session_id) || {};
+    // Use loop_id if available, otherwise fall back to session_id (backward compat)
+    const loopId =
+      (entry as StartLogEntry).loop_id ||
+      (entry as CompletionLogEntry).loop_id ||
+      entry.session_id;
+    const existing = loopMap.get(loopId) || {};
 
     if (entry.status === 'active') {
       existing.start = entry as StartLogEntry;
@@ -159,21 +171,28 @@ export function mergeSessions(entries: LogEntry[]): Session[] {
       existing.completion = entry as CompletionLogEntry;
     }
 
-    sessionMap.set(entry.session_id, existing);
+    loopMap.set(loopId, existing);
   }
 
   // Merge into Session objects
   const sessions: Session[] = [];
 
-  for (const [session_id, { start, completion }] of sessionMap) {
+  for (const [loop_id, { start, completion }] of loopMap) {
     if (!start) {
       // Skip entries without a start record (shouldn't happen)
       continue;
     }
 
-    const isActive = !completion;
-    const now = new Date();
+    // A loop is active if:
+    // 1. There's no completion entry, OR
+    // 2. The start entry is more recent than the completion entry (backward compat for old session_id-based entries)
     const startTime = new Date(start.started_at);
+    const completionTime = completion?.ended_at
+      ? new Date(completion.ended_at)
+      : null;
+    const isActive =
+      !completion || (completionTime && startTime > completionTime);
+    const now = new Date();
 
     // Calculate duration for active sessions
     const durationSeconds = isActive
@@ -203,7 +222,8 @@ export function mergeSessions(entries: LogEntry[]): Session[] {
     const task = cleanedTask ?? start.task;
 
     sessions.push({
-      session_id,
+      loop_id,
+      session_id: start.session_id,
       status,
       outcome: completion?.outcome,
       project: start.project,
@@ -235,17 +255,30 @@ export function getSessions(): Session[] {
   return mergeSessions(entries);
 }
 
-export function getSessionById(sessionId: string): Session | null {
+export function getSessionById(loopId: string): Session | null {
   const sessions = getSessions();
-  return sessions.find((s) => s.session_id === sessionId) ?? null;
+  return sessions.find((s) => s.loop_id === loopId) ?? null;
 }
 
 /**
- * Permanently delete a session from the log file.
- * Removes both start and completion entries for the given session_id.
- * Returns true if session was found and deleted, false otherwise.
+ * Permanently delete a loop from the log file.
+ * Removes both start and completion entries for the given loop_id.
+ * Also deletes the state file if it exists (to stop any active loop).
+ * Returns true if loop was found and deleted, false otherwise.
  */
-export function deleteSession(sessionId: string): boolean {
+export function deleteSession(loopId: string): boolean {
+  // Get session info first to find state file path
+  const session = getSessionById(loopId);
+
+  // Delete state file if it exists (stops any active loop)
+  if (session?.state_file_path && existsSync(session.state_file_path)) {
+    try {
+      unlinkSync(session.state_file_path);
+    } catch {
+      // Ignore errors - file may already be gone
+    }
+  }
+
   if (!existsSync(LOG_FILE)) {
     return false;
   }
@@ -253,14 +286,19 @@ export function deleteSession(sessionId: string): boolean {
   const content = readFileSync(LOG_FILE, 'utf-8');
   const lines = content.split('\n').filter((line) => line.trim());
 
-  // Filter out all entries for this session
+  // Filter out all entries for this loop
   const filteredLines: string[] = [];
   let found = false;
 
   for (const line of lines) {
     try {
       const entry = JSON.parse(line) as LogEntry;
-      if (entry.session_id === sessionId) {
+      // Match by loop_id, with fallback to session_id for backward compatibility
+      const entryLoopId =
+        (entry as StartLogEntry).loop_id ||
+        (entry as CompletionLogEntry).loop_id ||
+        entry.session_id;
+      if (entryLoopId === loopId) {
         found = true;
         // Skip this entry (delete it)
         continue;

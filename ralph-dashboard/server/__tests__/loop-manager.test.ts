@@ -9,8 +9,9 @@ const mockExistsSync = vi.mocked(fs.existsSync);
 const mockUnlinkSync = vi.mocked(fs.unlinkSync);
 
 // Import the module after mocking
-const { cancelLoop, checkStateFileExists } =
-  await import('../services/loop-manager');
+const { cancelLoop, checkStateFileExists } = await import(
+  '../services/loop-manager'
+);
 
 describe('loop-manager', () => {
   beforeEach(() => {
@@ -19,6 +20,7 @@ describe('loop-manager', () => {
 
   describe('cancelLoop', () => {
     const activeSession: Session = {
+      loop_id: 'loop-test-123',
       session_id: 'test-123',
       status: 'active',
       project: '/Users/test/project',
@@ -98,6 +100,7 @@ describe('loop-manager', () => {
   describe('checkStateFileExists', () => {
     it('should return false when no state file path', () => {
       const session: Session = {
+        loop_id: 'loop-test',
         session_id: 'test',
         status: 'active',
         project: '/test',
@@ -121,6 +124,7 @@ describe('loop-manager', () => {
       mockExistsSync.mockReturnValue(true);
 
       const session: Session = {
+        loop_id: 'loop-test',
         session_id: 'test',
         status: 'active',
         project: '/test',
@@ -145,6 +149,7 @@ describe('loop-manager', () => {
       mockExistsSync.mockReturnValue(false);
 
       const session: Session = {
+        loop_id: 'loop-test',
         session_id: 'test',
         status: 'active',
         project: '/test',

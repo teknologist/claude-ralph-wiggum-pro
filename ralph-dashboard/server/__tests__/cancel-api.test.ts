@@ -8,6 +8,7 @@ vi.mock('../services/log-parser');
 vi.mock('../services/loop-manager');
 
 const createMockSession = (overrides: Partial<Session> = {}): Session => ({
+  loop_id: 'test-loop-1',
   session_id: 'test-session-1',
   status: 'active',
   project: '/path/to/project',
@@ -31,23 +32,28 @@ describe('handleCancelSession', () => {
 
   it('cancels active session successfully', async () => {
     const mockSession = createMockSession({
+      loop_id: 'loop-123',
       session_id: 'session-123',
       status: 'active',
     });
-    vi.mocked(logParser.getSessionById).mockReturnValue(mockSession);
+    vi.mocked(logParser.getSessionById).mockImplementation((id) => {
+      if (id === 'loop-123') return mockSession;
+      return null;
+    });
     vi.mocked(loopManager.cancelLoop).mockReturnValue({
       success: true,
       message: 'Loop cancelled successfully',
     });
 
-    const response = handleCancelSession('session-123');
+    const response = handleCancelSession('loop-123');
     const data = await response.json();
 
     expect(data).toEqual({
       success: true,
       message: 'Loop cancelled successfully',
-      session_id: 'session-123',
+      loop_id: 'loop-123',
     });
+    expect(logParser.getSessionById).toHaveBeenCalledWith('loop-123');
     expect(loopManager.cancelLoop).toHaveBeenCalledWith(mockSession);
   });
 

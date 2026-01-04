@@ -1,14 +1,14 @@
 import { getSessionById, deleteSession } from '../services/log-parser';
 import type { DeleteResponse, ErrorResponse } from '../types';
 
-export function handleDeleteSession(sessionId: string): Response {
+export function handleDeleteSession(loopId: string): Response {
   try {
-    const session = getSessionById(sessionId);
+    const session = getSessionById(loopId);
 
     if (!session) {
       const response: ErrorResponse = {
         error: 'NOT_FOUND',
-        message: `Session not found: ${sessionId}`,
+        message: `Loop not found: ${loopId}`,
       };
       return Response.json(response, { status: 404 });
     }
@@ -17,25 +17,25 @@ export function handleDeleteSession(sessionId: string): Response {
     if (session.status === 'active') {
       const response: ErrorResponse = {
         error: 'INVALID_STATE',
-        message: `Cannot delete active session. Cancel it first.`,
+        message: `Cannot delete active loop. Cancel it first.`,
       };
       return Response.json(response, { status: 400 });
     }
 
-    const deleted = deleteSession(sessionId);
+    const deleted = deleteSession(loopId);
 
     if (!deleted) {
       const response: ErrorResponse = {
         error: 'DELETE_FAILED',
-        message: `Failed to delete session from log file`,
+        message: `Failed to delete loop from log file`,
       };
       return Response.json(response, { status: 500 });
     }
 
     const response: DeleteResponse = {
       success: true,
-      message: `Session permanently deleted from history`,
-      session_id: sessionId,
+      message: `Loop permanently deleted from history`,
+      loop_id: loopId,
     };
 
     return Response.json(response);
@@ -43,7 +43,7 @@ export function handleDeleteSession(sessionId: string): Response {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const response: ErrorResponse = {
       error: 'DELETE_ERROR',
-      message: `Failed to delete session: ${errorMessage}`,
+      message: `Failed to delete loop: ${errorMessage}`,
     };
     return Response.json(response, { status: 500 });
   }

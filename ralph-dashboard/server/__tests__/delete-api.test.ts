@@ -24,6 +24,7 @@ describe('handleDeleteSession', () => {
 
   it('returns 400 when trying to delete active session', async () => {
     const activeSession: Session = {
+      loop_id: 'loop-active-123',
       session_id: 'active-123',
       status: 'active',
       project: '/test',
@@ -46,11 +47,12 @@ describe('handleDeleteSession', () => {
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data.error).toBe('INVALID_STATE');
-    expect(data.message).toContain('Cannot delete active session');
+    expect(data.message).toContain('Cannot delete active loop');
   });
 
   it('returns 500 when deleteSession fails', async () => {
     const completedSession: Session = {
+      loop_id: 'loop-completed-123',
       session_id: 'completed-123',
       status: 'success',
       outcome: 'success',
@@ -79,6 +81,7 @@ describe('handleDeleteSession', () => {
 
   it('returns success when session is deleted', async () => {
     const completedSession: Session = {
+      loop_id: 'loop-completed-123',
       session_id: 'completed-123',
       status: 'success',
       outcome: 'success',
@@ -104,11 +107,12 @@ describe('handleDeleteSession', () => {
     const data = await response.json();
     expect(data.success).toBe(true);
     expect(data.message).toContain('permanently deleted');
-    expect(data.session_id).toBe('completed-123');
+    expect(data.loop_id).toBe('completed-123');
   });
 
   it('allows deletion of cancelled sessions', async () => {
     const cancelledSession: Session = {
+      loop_id: 'loop-cancelled-123',
       session_id: 'cancelled-123',
       status: 'cancelled',
       outcome: 'cancelled',
@@ -137,6 +141,7 @@ describe('handleDeleteSession', () => {
 
   it('allows deletion of error sessions', async () => {
     const errorSession: Session = {
+      loop_id: 'loop-error-123',
       session_id: 'error-123',
       status: 'error',
       outcome: 'error',
@@ -165,6 +170,7 @@ describe('handleDeleteSession', () => {
 
   it('allows deletion of max_iterations sessions', async () => {
     const maxIterSession: Session = {
+      loop_id: 'loop-maxiter-123',
       session_id: 'maxiter-123',
       status: 'max_iterations',
       outcome: 'max_iterations',

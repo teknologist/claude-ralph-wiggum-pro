@@ -1,6 +1,7 @@
-import { existsSync, unlinkSync } from 'fs';
+import { existsSync, unlinkSync, appendFileSync } from 'fs';
 import { resolve } from 'path';
 import type { Session } from '../types';
+import { getLogFilePath } from './log-parser';
 
 export interface CancelResult {
   success: boolean;
@@ -34,7 +35,7 @@ export function cancelLoop(session: Session): CancelResult {
   if (session.status !== 'active') {
     return {
       success: false,
-      message: `Session ${session.session_id} is not active (status: ${session.status})`,
+      message: `Loop ${session.loop_id} is not active (status: ${session.status})`,
     };
   }
 
@@ -43,7 +44,7 @@ export function cancelLoop(session: Session): CancelResult {
   if (!stateFilePath) {
     return {
       success: false,
-      message: `No state file found for session ${session.session_id}`,
+      message: `No state file found for loop ${session.loop_id}`,
     };
   }
 
@@ -51,27 +52,42 @@ export function cancelLoop(session: Session): CancelResult {
   if (!validateStateFilePath(stateFilePath, session)) {
     return {
       success: false,
-      message: `Invalid state file path for session ${session.session_id}`,
+      message: `Invalid state file path for loop ${session.loop_id}`,
     };
   }
 
   if (!existsSync(stateFilePath)) {
     return {
       success: false,
-      message: `State file no longer exists for session ${session.session_id}`,
+      message: `State file no longer exists for loop ${session.loop_id}`,
     };
   }
 
   try {
     unlinkSync(stateFilePath);
+
+    // Log the cancellation to sessions.jsonl
+    const logEntry = {
+      loop_id: session.loop_id,
+      session_id: session.session_id,
+      status: 'completed',
+      outcome: 'cancelled',
+      ended_at: new Date().toISOString(),
+      duration_seconds: Math.floor(
+        (Date.now() - new Date(session.started_at).getTime()) / 1000
+      ),
+      iterations: session.iterations ?? 0,
+    };
+    appendFileSync(getLogFilePath(), JSON.stringify(logEntry) + '\n');
+
     return {
       success: true,
-      message: `Successfully cancelled loop ${session.session_id}`,
+      message: `Successfully cancelled loop ${session.loop_id}`,
     };
   } catch (error) {
     return {
       success: false,
-      message: `Failed to cancel loop ${session.session_id}`,
+      message: `Failed to cancel loop ${session.loop_id}`,
     };
   }
 }

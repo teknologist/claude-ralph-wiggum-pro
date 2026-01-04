@@ -36,10 +36,21 @@ if [[ ! "$CURRENT_SESSION_ID" =~ ^[a-zA-Z0-9._-]+$ ]] || [[ "$CURRENT_SESSION_ID
   exit 0
 fi
 
-# Check if ralph-loop is active for THIS session
-RALPH_STATE_FILE=".claude/ralph-loop.${CURRENT_SESSION_ID}.local.md"
+# Find state file for THIS session
+# State files are named with loop_id but contain session_id in frontmatter
+RALPH_STATE_FILE=""
+for STATE_FILE in .claude/ralph-loop.*.local.md; do
+  [[ -f "$STATE_FILE" ]] || continue
+  # Check if this state file belongs to current session
+  # Using grep + sed for cross-platform compatibility (BSD/GNU)
+  FILE_SESSION_ID=$(grep '^session_id:' "$STATE_FILE" 2>/dev/null | head -1 | sed 's/session_id: *"\{0,1\}\([^"]*\)"\{0,1\}.*/\1/' || echo "")
+  if [[ "$FILE_SESSION_ID" == "$CURRENT_SESSION_ID" ]]; then
+    RALPH_STATE_FILE="$STATE_FILE"
+    break
+  fi
+done
 
-if [[ ! -f "$RALPH_STATE_FILE" ]]; then
+if [[ -z "$RALPH_STATE_FILE" ]] || [[ ! -f "$RALPH_STATE_FILE" ]]; then
   # No active loop for this session - allow exit
   exit 0
 fi

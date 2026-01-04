@@ -48,7 +48,8 @@ describe('API client', () => {
   describe('fetchSession', () => {
     it('should fetch single session successfully', async () => {
       const mockSession: Session = {
-        session_id: 'test-123',
+        loop_id: 'test-123',
+        session_id: 'test-session-123',
         status: 'active',
         project: '/test',
         project_name: 'test',

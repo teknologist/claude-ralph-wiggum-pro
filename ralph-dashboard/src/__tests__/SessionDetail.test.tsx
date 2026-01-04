@@ -4,6 +4,7 @@ import { SessionDetail } from '../components/SessionDetail';
 import type { Session } from '../../server/types';
 
 const createMockSession = (overrides: Partial<Session> = {}): Session => ({
+  loop_id: 'test-loop-1',
   session_id: 'test-session-1',
   status: 'active',
   project: '/path/to/project',

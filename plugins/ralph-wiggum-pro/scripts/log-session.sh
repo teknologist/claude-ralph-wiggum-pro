@@ -32,6 +32,7 @@ if [[ "${1:-}" == "--start" ]]; then
   # === START ENTRY MODE ===
   shift
 
+  LOOP_ID=""
   SESSION_ID=""
   PROJECT_PATH=""
   TASK=""
@@ -41,6 +42,10 @@ if [[ "${1:-}" == "--start" ]]; then
 
   while [[ $# -gt 0 ]]; do
     case $1 in
+      --loop-id)
+        LOOP_ID="$2"
+        shift 2
+        ;;
       --session-id)
         SESSION_ID="$2"
         shift 2
@@ -73,8 +78,8 @@ if [[ "${1:-}" == "--start" ]]; then
   done
 
   # Validate required params
-  if [[ -z "$SESSION_ID" ]] || [[ -z "$PROJECT_PATH" ]] || [[ -z "$TASK" ]] || [[ -z "$STATE_FILE_PATH" ]]; then
-    echo "Usage: log-session.sh --start --session-id ID --project PATH --task TEXT --state-file PATH [--max-iterations N] [--completion-promise TEXT]" >&2
+  if [[ -z "$LOOP_ID" ]] || [[ -z "$SESSION_ID" ]] || [[ -z "$PROJECT_PATH" ]] || [[ -z "$TASK" ]] || [[ -z "$STATE_FILE_PATH" ]]; then
+    echo "Usage: log-session.sh --start --loop-id ID --session-id ID --project PATH --task TEXT --state-file PATH [--max-iterations N] [--completion-promise TEXT]" >&2
     exit 1
   fi
 
@@ -108,6 +113,7 @@ if [[ "${1:-}" == "--start" ]]; then
   trap "rm -f '$TEMP_ENTRY'" EXIT
 
   jq -n -c \
+    --arg loop_id "$LOOP_ID" \
     --arg session_id "$SESSION_ID" \
     --arg status "active" \
     --arg project "$PROJECT_PATH" \
@@ -118,6 +124,7 @@ if [[ "${1:-}" == "--start" ]]; then
     --argjson max_iterations "$MAX_ITERATIONS" \
     --arg completion_promise "$COMPLETION_PROMISE" \
     '{
+      loop_id: $loop_id,
       session_id: $session_id,
       status: $status,
       project: $project,
@@ -164,7 +171,13 @@ else
   # Parse markdown frontmatter (YAML between ---) and extract values
   FRONTMATTER=$(sed -n '/^---$/,/^---$/{ /^---$/d; p; }' "$STATE_FILE")
 
+  LOOP_ID=$(echo "$FRONTMATTER" | grep '^loop_id:' | sed 's/loop_id: *//' | sed 's/^"\(.*\)"$/\1/')
   SESSION_ID=$(echo "$FRONTMATTER" | grep '^session_id:' | sed 's/session_id: *//' | sed 's/^"\(.*\)"$/\1/')
+
+  # Fallback: If loop_id is missing (older state files), use session_id
+  if [[ -z "$LOOP_ID" ]]; then
+    LOOP_ID="$SESSION_ID"
+  fi
   ITERATION=$(echo "$FRONTMATTER" | grep '^iteration:' | sed 's/iteration: *//')
   STARTED_AT=$(echo "$FRONTMATTER" | grep '^started_at:' | sed 's/started_at: *//' | sed 's/^"\(.*\)"$/\1/')
 
@@ -189,6 +202,7 @@ else
   trap "rm -f '$TEMP_ENTRY'" EXIT
 
   jq -n -c \
+    --arg loop_id "$LOOP_ID" \
     --arg session_id "$SESSION_ID" \
     --arg status "completed" \
     --arg outcome "$OUTCOME" \
@@ -197,6 +211,7 @@ else
     --argjson iterations "${ITERATION:-0}" \
     --arg error_reason "$ERROR_REASON" \
     '{
+      loop_id: $loop_id,
       session_id: $session_id,
       status: $status,
       outcome: $outcome,

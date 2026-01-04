@@ -6,6 +6,7 @@ import type { Session } from '../../server/types';
 describe('StatsBar', () => {
   const mockSessions: Session[] = [
     {
+      loop_id: 'loop-active-1',
       session_id: 'active-1',
       status: 'active',
       project: '/test/project1',
@@ -21,6 +22,7 @@ describe('StatsBar', () => {
       error_reason: null,
     },
     {
+      loop_id: 'loop-success-1',
       session_id: 'success-1',
       status: 'success',
       outcome: 'success',
@@ -37,6 +39,7 @@ describe('StatsBar', () => {
       error_reason: null,
     },
     {
+      loop_id: 'loop-cancelled-1',
       session_id: 'cancelled-1',
       status: 'cancelled',
       outcome: 'cancelled',
@@ -87,6 +90,7 @@ describe('StatsBar', () => {
   it('should format average duration in hours for long sessions', () => {
     const longSessions: Session[] = [
       {
+        loop_id: 'loop-long-1',
         session_id: 'long-1',
         status: 'success',
         outcome: 'success',

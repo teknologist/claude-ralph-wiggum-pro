@@ -1,6 +1,7 @@
 // Log entry types (as stored in JSONL)
 export interface StartLogEntry {
-  session_id: string;
+  loop_id: string; // Unique per loop invocation
+  session_id: string; // Claude Code terminal session (for grouping)
   status: 'active';
   project: string;
   project_name: string;
@@ -12,7 +13,8 @@ export interface StartLogEntry {
 }
 
 export interface CompletionLogEntry {
-  session_id: string;
+  loop_id: string; // Unique per loop invocation
+  session_id: string; // Claude Code terminal session (for grouping)
   status: 'completed';
   outcome: 'success' | 'max_iterations' | 'cancelled' | 'error';
   ended_at: string;
@@ -25,7 +27,8 @@ export type LogEntry = StartLogEntry | CompletionLogEntry;
 
 // Merged session type (for API responses)
 export interface Session {
-  session_id: string;
+  loop_id: string; // Unique per loop invocation (primary identifier)
+  session_id: string; // Claude Code terminal session (for grouping)
   status: 'active' | 'success' | 'cancelled' | 'error' | 'max_iterations';
   outcome?: 'success' | 'cancelled' | 'error' | 'max_iterations';
   project: string;
@@ -50,13 +53,13 @@ export interface SessionsResponse {
 export interface CancelResponse {
   success: boolean;
   message: string;
-  session_id: string;
+  loop_id: string;
 }
 
 export interface DeleteResponse {
   success: boolean;
   message: string;
-  session_id: string;
+  loop_id: string;
 }
 
 export interface ErrorResponse {

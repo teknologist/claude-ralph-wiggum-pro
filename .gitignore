@@ -1,5 +1,5 @@
 *.DS_Store
-.claude/
+.claude/commands
 /ralph-dashboard/playwright-report/index.html
 /ralph-dashboard/test-results/.last-run.json
 /ralph-dashboard/tsconfig.tsbuildinfo

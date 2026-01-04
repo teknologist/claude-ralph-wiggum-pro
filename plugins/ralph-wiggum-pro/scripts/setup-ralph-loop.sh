@@ -324,8 +324,35 @@ if [[ ! "$SESSION_ID" =~ ^[a-zA-Z0-9._-]+$ ]] || [[ "$SESSION_ID" == *".."* ]]; 
   exit 1
 fi
 
-# Create state file for stop hook (markdown with YAML frontmatter)
+# Create .claude directory if needed
 mkdir -p .claude
+
+# Check if a loop already exists for this session (prevents multiple concurrent loops)
+EXISTING_LOOP=""
+for STATE_FILE in .claude/ralph-loop.*.local.md; do
+  [[ -f "$STATE_FILE" ]] || continue
+  FILE_SESSION_ID=$(sed -n '/^---$/,/^---$/{ /^session_id:/{ s/session_id: *"\{0,1\}\([^"]*\)"\{0,1\}/\1/p; q; } }' "$STATE_FILE" 2>/dev/null || echo "")
+  if [[ "$FILE_SESSION_ID" == "$SESSION_ID" ]]; then
+    EXISTING_LOOP="$STATE_FILE"
+    break
+  fi
+done
+
+if [[ -n "$EXISTING_LOOP" ]]; then
+  echo "Error: A Ralph loop is already active in this session!" >&2
+  echo "" >&2
+  echo "   State file: $EXISTING_LOOP" >&2
+  echo "   To restart the loop:" >&2
+  echo "     1. Cancel current loop: /cancel-ralph" >&2
+  echo "     2. Start new loop: /ralph-loop <prompt>" >&2
+  echo "" >&2
+  echo "   To continue existing loop: just keep working (exit will loop)" >&2
+  exit 1
+fi
+
+# Generate unique loop ID for this invocation (separate from session ID)
+# This allows multiple loops in the same session to have unique identifiers
+LOOP_ID="$(uuidgen 2>/dev/null | tr '[:upper:]' '[:lower:]' || cat /proc/sys/kernel/random/uuid 2>/dev/null || echo "loop-$(date +%s%N)-$$")"
 
 # Generate description from first 60 chars of prompt
 DESCRIPTION=$(echo "$PROMPT" | tr '\n' ' ' | head -c 60)
@@ -340,14 +367,15 @@ else
   COMPLETION_PROMISE_YAML="null"
 fi
 
-# Create session-specific state file
-STATE_FILE=".claude/ralph-loop.${SESSION_ID}.local.md"
+# Create loop-specific state file (using LOOP_ID for uniqueness)
+STATE_FILE=".claude/ralph-loop.${LOOP_ID}.local.md"
 STATE_FILE_PATH="$(pwd)/$STATE_FILE"
 PROJECT_PATH="$(pwd)"
 
 cat > "$STATE_FILE" <<EOF
 ---
 active: true
+loop_id: "$LOOP_ID"
 session_id: "$SESSION_ID"
 description: "$DESCRIPTION"
 iteration: 1
@@ -367,6 +395,7 @@ if [[ "$COMPLETION_PROMISE" != "null" ]]; then
 fi
 
 "$SCRIPT_DIR/log-session.sh" --start \
+  --loop-id "$LOOP_ID" \
   --session-id "$SESSION_ID" \
   --project "$PROJECT_PATH" \
   --task "$PROMPT" \
@@ -378,7 +407,7 @@ fi
 cat <<EOF
 🔄 Ralph loop activated in this session!
 
-Session ID: ${SESSION_ID:0:12}...
+Loop ID: ${LOOP_ID:0:12}...
 Description: $DESCRIPTION
 Iteration: 1
 Max iterations: $(if [[ $MAX_ITERATIONS -gt 0 ]]; then echo $MAX_ITERATIONS; else echo "unlimited"; fi)

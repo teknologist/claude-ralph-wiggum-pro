@@ -2,14 +2,14 @@ import { getSessionById } from '../services/log-parser';
 import { cancelLoop } from '../services/loop-manager';
 import type { CancelResponse, ErrorResponse } from '../types';
 
-export function handleCancelSession(sessionId: string): Response {
+export function handleCancelSession(loopId: string): Response {
   try {
-    const session = getSessionById(sessionId);
+    const session = getSessionById(loopId);
 
     if (!session) {
       const response: ErrorResponse = {
         error: 'NOT_FOUND',
-        message: `Session not found: ${sessionId}`,
+        message: `Loop not found: ${loopId}`,
       };
       return Response.json(response, { status: 404 });
     }
@@ -17,7 +17,7 @@ export function handleCancelSession(sessionId: string): Response {
     if (session.status !== 'active') {
       const response: ErrorResponse = {
         error: 'INVALID_STATE',
-        message: `Cannot cancel session: status is '${session.status}', expected 'active'`,
+        message: `Cannot cancel loop: status is '${session.status}', expected 'active'`,
       };
       return Response.json(response, { status: 400 });
     }
@@ -35,7 +35,7 @@ export function handleCancelSession(sessionId: string): Response {
     const response: CancelResponse = {
       success: true,
       message: result.message,
-      session_id: sessionId,
+      loop_id: loopId,
     };
 
     return Response.json(response);
@@ -43,7 +43,7 @@ export function handleCancelSession(sessionId: string): Response {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const response: ErrorResponse = {
       error: 'CANCEL_ERROR',
-      message: `Failed to cancel session: ${errorMessage}`,
+      message: `Failed to cancel loop: ${errorMessage}`,
     };
     return Response.json(response, { status: 500 });
   }

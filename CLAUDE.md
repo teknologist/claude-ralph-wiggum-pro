@@ -21,6 +21,8 @@ cd plugins/ralph-wiggum-pro/tests && ./run-all-tests.sh
 ./test-quote-preservation.sh
 ```
 
+> **⚠️ MANDATORY**: After running ANY tests, you MUST run [Test Cleanup](#test-cleanup) commands. Tests pollute session logs with temp directory entries.
+
 ### Dashboard Development
 
 ```bash
@@ -52,7 +54,11 @@ bun run test:coverage     # With coverage
 # E2E tests
 bun run test:e2e          # Headless
 bun run test:e2e:ui       # Interactive UI
+```
 
+> **⚠️ MANDATORY**: After running ANY tests, you MUST run [Test Cleanup](#test-cleanup) commands. Tests pollute session logs with temp directory entries.
+
+```bash
 # Production build
 bun run build
 bun run start             # Serve production build
@@ -161,14 +167,15 @@ All tests run in CI with the test:e2e command requiring a built frontend (`bun r
 
 ### Test Cleanup
 
-**IMPORTANT**: Running tests creates loop entries in both the session history and project state files. These must be cleaned up after testing:
+> **🚨 MANDATORY - DO NOT SKIP**: You MUST run these commands after running ANY tests (plugin bash tests OR dashboard unit/e2e tests). Failure to clean up pollutes the session logs with test data.
 
 ```bash
 # Clean up test entries from session logs (removes entries from temp directories)
 grep -v '/var/folders/' ~/.claude/ralph-wiggum-pro-logs/sessions.jsonl | grep -v '/tmp/' > /tmp/clean.jsonl && mv /tmp/clean.jsonl ~/.claude/ralph-wiggum-pro-logs/sessions.jsonl
 
-# Clean up any leftover state files in project
-rm -f .claude/ralph-loop.test-*.local.md
+# Clean up any leftover state files in project (UUID-based loop_id filenames)
+# Note: Tests run in temp directories and usually clean up, but check just in case
+ls .claude/ralph-loop.*.local.md 2>/dev/null && rm -f .claude/ralph-loop.*.local.md || true
 ```
 
 ## Commit Workflow

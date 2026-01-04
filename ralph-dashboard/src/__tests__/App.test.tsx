@@ -27,6 +27,7 @@ function createWrapper() {
 const mockSessionsResponse: SessionsResponse = {
   sessions: [
     {
+      loop_id: 'test-loop-1',
       session_id: 'test-1',
       status: 'active',
       project: '/path/to/project',

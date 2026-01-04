@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.6] - 2026-01-04
+
+### Added
+- **Unique Loop Identifiers (`loop_id`)**: Each `/ralph-loop` invocation now generates a unique UUID, fixing dashboard issues when loops are cancelled and restarted in the same session
+- Backward compatibility for legacy log entries without `loop_id` (falls back to `session_id`)
+
+### Changed
+- State files now named with `loop_id` instead of `session_id` (`.claude/ralph-loop.{loop_id}.local.md`)
+- Stop hook finds state files by scanning frontmatter for `session_id` match (cross-platform compatible)
+- Dashboard groups sessions by `loop_id` instead of `session_id`
+
+### Fixed
+- Dashboard now correctly shows restarted loops as separate entries instead of incorrectly merging them
+- Fixed macOS sed compatibility in stop-hook.sh (BSD/GNU compatible pattern matching)
+- Fixed `log-session.sh` to handle older state files without `loop_id` field
+
 ## [2.0.5] - 2026-01-04
 
 ### Added
