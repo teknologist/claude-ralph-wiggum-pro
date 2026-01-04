@@ -31,9 +31,11 @@ test.describe('Ralph Dashboard', () => {
   test('displays session table with tabs', async ({ page }) => {
     await page.goto('/');
 
-    // Check tabs are visible
-    await expect(page.getByText('Active Loops')).toBeVisible();
-    await expect(page.getByText('Archived')).toBeVisible();
+    // Check tabs are visible - use getByRole to avoid matching "No active loops" text
+    await expect(
+      page.getByRole('button', { name: 'Active Loops' })
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: /Archived/ })).toBeVisible();
   });
 
   test('can switch between active and archived tabs', async ({ page }) => {
