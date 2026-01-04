@@ -159,6 +159,18 @@ Plugin tests are bash scripts with manual assertions. Dashboard has:
 
 All tests run in CI with the test:e2e command requiring a built frontend (`bun run build` first).
 
+### Test Cleanup
+
+**IMPORTANT**: Running tests creates loop entries in both the session history and project state files. These must be cleaned up after testing:
+
+```bash
+# Clean up test entries from session logs (removes entries from temp directories)
+grep -v '/var/folders/' ~/.claude/ralph-wiggum-pro-logs/sessions.jsonl | grep -v '/tmp/' > /tmp/clean.jsonl && mv /tmp/clean.jsonl ~/.claude/ralph-wiggum-pro-logs/sessions.jsonl
+
+# Clean up any leftover state files in project
+rm -f .claude/ralph-loop.test-*.local.md
+```
+
 ## Commit Workflow
 
 **IMPORTANT**: Every commit must update `CHANGELOG.md` at the repository root.
