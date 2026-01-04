@@ -416,7 +416,7 @@ Content`;
     it('returns expected path format', () => {
       const path = getLogFilePath();
       expect(path).toContain('.claude');
-      expect(path).toContain('ralph-wiggum-logs');
+      expect(path).toContain('ralph-wiggum-pro-logs');
       expect(path).toContain('sessions.jsonl');
     });
   });

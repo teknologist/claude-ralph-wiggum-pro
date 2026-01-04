@@ -11,7 +11,7 @@ import type {
 const LOG_FILE = join(
   homedir(),
   '.claude',
-  'ralph-wiggum-logs',
+  'ralph-wiggum-pro-logs',
   'sessions.jsonl'
 );
 

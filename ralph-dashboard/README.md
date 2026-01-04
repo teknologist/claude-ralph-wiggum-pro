@@ -1,7 +1,7 @@
 # Ralph Dashboard
 
-[![CI](https://github.com/teknologist/claude-plugins-official/actions/workflows/ralph-dashboard-ci.yml/badge.svg)](https://github.com/teknologist/claude-plugins-official/actions/workflows/ralph-dashboard-ci.yml)
-[![codecov](https://codecov.io/gh/teknologist/claude-plugins-official/graph/badge.svg?flag=ralph-dashboard)](https://codecov.io/gh/teknologist/claude-plugins-official)
+[![CI](https://github.com/teknologist/claude-ralph-wiggum-pro/actions/workflows/ralph-dashboard-ci.yml/badge.svg)](https://github.com/teknologist/claude-ralph-wiggum-pro/actions/workflows/ralph-dashboard-ci.yml)
+[![codecov](https://codecov.io/gh/teknologist/claude-ralph-wiggum-pro/graph/badge.svg?flag=ralph-dashboard)](https://codecov.io/gh/teknologist/claude-ralph-wiggum-pro)
 ![tests](https://img.shields.io/badge/tests-182_passing-brightgreen)
 [![npm version](https://img.shields.io/npm/v/ralph-dashboard?color=blue)](https://www.npmjs.com/package/ralph-dashboard)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -124,8 +124,8 @@ ralph-dashboard/
 
 ## Requirements
 
-- Ralph Wiggum plugin must be installed and configured
-- Sessions are logged to `~/.claude/ralph-wiggum-logs/sessions.jsonl`
+- Ralph Wiggum Pro plugin must be installed and configured
+- Sessions are logged to `~/.claude/ralph-wiggum-pro-logs/sessions.jsonl`
 
 ## License
 

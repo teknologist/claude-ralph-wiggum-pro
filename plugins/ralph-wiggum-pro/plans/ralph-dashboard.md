@@ -16,22 +16,22 @@ A standalone Bun web app that displays a dashboard of Ralph Wiggum loops (active
 ### Part 1: Plugin Modification (ralph-wiggum)
 Modify the existing plugin to log loop starts and store project paths for remote cancellation.
 
-**File: `plugins/ralph-wiggum/scripts/log-session.sh`**
+**File: `plugins/ralph-wiggum-pro/scripts/log-session.sh`**
 - Add new status type: `active` (for start entries)
 - Accept direct params for start events (before state file exists)
 - Store `state_file_path` in log entry (absolute path to `.claude/ralph-loop.{SESSION_ID}.local.md`)
 
-**File: `plugins/ralph-wiggum/scripts/setup-ralph-loop.sh`**
+**File: `plugins/ralph-wiggum-pro/scripts/setup-ralph-loop.sh`**
 - Call `log-session.sh` with `status=active` immediately when loop starts
 - Pass: session_id, project_path, state_file_path, task, started_at, max_iterations, completion_promise
 
-**File: `plugins/ralph-wiggum/commands/ralph-stats.md`**
+**File: `plugins/ralph-wiggum-pro/commands/ralph-stats.md`**
 - Update to merge two entries per session (start + completion) by `session_id`
 - Add `--active` filter to show only active loops
 - Show active loops with 🔄 status instead of outcome
 - Handle sessions that only have start entry (still active)
 
-**Log Format Update** (`~/.claude/ralph-wiggum-logs/sessions.jsonl`):
+**Log Format Update** (`~/.claude/ralph-wiggum-pro-logs/sessions.jsonl`):
 ```json
 // Start entry (new) - includes state_file_path for remote cancellation
 {
@@ -134,7 +134,7 @@ ralph-dashboard/
 ```
 
 **Log Parser Service (`server/services/log-parser.ts`)**
-- Read `~/.claude/ralph-wiggum-logs/sessions.jsonl`
+- Read `~/.claude/ralph-wiggum-pro-logs/sessions.jsonl`
 - Group entries by session_id
 - Merge start (active) + end entries into unified session objects
 - Sessions with only start entry = active loops
@@ -221,9 +221,9 @@ colors: {
 ## Key Files to Modify
 
 **Existing (ralph-wiggum plugin)**:
-- `plugins/ralph-wiggum/scripts/setup-ralph-loop.sh` - Log on start with state_file_path
-- `plugins/ralph-wiggum/scripts/log-session.sh` - Support active status, direct params
-- `plugins/ralph-wiggum/commands/ralph-stats.md` - Merge entries by session_id, add --active filter
+- `plugins/ralph-wiggum-pro/scripts/setup-ralph-loop.sh` - Log on start with state_file_path
+- `plugins/ralph-wiggum-pro/scripts/log-session.sh` - Support active status, direct params
+- `plugins/ralph-wiggum-pro/commands/ralph-stats.md` - Merge entries by session_id, add --active filter
 
 **New (ralph-dashboard package)**:
 ```

@@ -1,9 +1,9 @@
 {
-  "name": "ralph-wiggum",
-  "version": "2.0.2",
+  "name": "ralph-wiggum-pro",
+  "version": "2.0.4",
   "description": "Implementation of the Ralph Wiggum technique - continuous self-referential AI loops for interactive iterative development. Run Claude in a while-true loop with the same prompt until task completion.",
   "author": {
-    "name": "Anthropic",
-    "email": "support@anthropic.com"
+    "name": "The Teknologist",
+    "email": "teknologist@gmail.com"
   }
 }

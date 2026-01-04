@@ -99,7 +99,7 @@ View historical Ralph loop session data.
 - Outcome (success/max/cancel/error)
 - Start and end timestamps
 
-**Log location:** `~/.claude/ralph-wiggum-logs/sessions.jsonl`
+**Log location:** `~/.claude/ralph-wiggum-pro-logs/sessions.jsonl`
 
 ---
 

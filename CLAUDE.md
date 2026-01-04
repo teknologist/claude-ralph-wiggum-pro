@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This repository contains the **Ralph Wiggum** plugin for Claude Code - a self-referential iteration loop system that enables autonomous, iterative task execution.
+This repository contains the **Ralph Wiggum Pro** plugin for Claude Code - a self-referential iteration loop system that enables autonomous, iterative task execution.
 
 ## Development Commands
 
@@ -12,7 +12,7 @@ This repository contains the **Ralph Wiggum** plugin for Claude Code - a self-re
 
 ```bash
 # Run all plugin tests
-cd plugins/ralph-wiggum/tests && ./run-all-tests.sh
+cd plugins/ralph-wiggum-pro/tests && ./run-all-tests.sh
 
 # Run a single test file
 ./test-session-start-hook.sh
@@ -127,16 +127,16 @@ The actual prompt text goes here...
 
 ### Session Logging
 
-All loops are logged to `~/.claude/ralph-wiggum-logs/sessions.jsonl` (JSONL format) with project, task, iterations, duration, outcome, and timestamps.
+All loops are logged to `~/.claude/ralph-wiggum-pro-logs/sessions.jsonl` (JSONL format) with project, task, iterations, duration, outcome, and timestamps.
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `plugins/ralph-wiggum/hooks/stop-hook.sh` | Intercepts exit, checks for completion promise, feeds prompt back |
-| `plugins/ralph-wiggum/hooks/session-start-hook.sh` | Persists CLAUDE_SESSION_ID to environment |
-| `plugins/ralph-wiggum/scripts/setup-ralph-loop.sh` | Creates state file with frontmatter + prompt |
-| `plugins/ralph-wiggum/scripts/log-session.sh` | Logs session events to JSONL |
+| `plugins/ralph-wiggum-pro/hooks/stop-hook.sh` | Intercepts exit, checks for completion promise, feeds prompt back |
+| `plugins/ralph-wiggum-pro/hooks/session-start-hook.sh` | Persists CLAUDE_SESSION_ID to environment |
+| `plugins/ralph-wiggum-pro/scripts/setup-ralph-loop.sh` | Creates state file with frontmatter + prompt |
+| `plugins/ralph-wiggum-pro/scripts/log-session.sh` | Logs session events to JSONL |
 | `ralph-dashboard/server/services/loop-manager.ts` | Parses state files, validates session data |
 
 ## Environment Variables

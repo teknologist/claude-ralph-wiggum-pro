@@ -57,7 +57,7 @@ describe('loop-manager', () => {
       const result = cancelLoop(sessionNoPath);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('No state file path');
+      expect(result.message).toContain('No state file found');
     });
 
     it('should fail when state file does not exist', () => {
@@ -66,7 +66,7 @@ describe('loop-manager', () => {
       const result = cancelLoop(activeSession);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('State file not found');
+      expect(result.message).toContain('State file no longer exists');
     });
 
     it('should successfully delete state file', () => {
@@ -91,7 +91,7 @@ describe('loop-manager', () => {
       const result = cancelLoop(activeSession);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('Permission denied');
+      expect(result.message).toContain('Failed to cancel loop');
     });
   });
 

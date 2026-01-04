@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Ralph Wiggum Session Logger
-# Logs session data to ~/.claude/ralph-wiggum-logs/sessions.jsonl
+# Ralph Wiggum Pro Session Logger
+# Logs session data to ~/.claude/ralph-wiggum-pro-logs/sessions.jsonl
 #
 # Usage (start entry - new):
 #   log-session.sh --start --session-id ID --project PATH --task "TEXT" \
@@ -23,7 +23,7 @@ if ! command -v jq &>/dev/null; then
 fi
 
 # Ensure log directory exists
-LOG_DIR="$HOME/.claude/ralph-wiggum-logs"
+LOG_DIR="$HOME/.claude/ralph-wiggum-pro-logs"
 LOG_FILE="$LOG_DIR/sessions.jsonl"
 mkdir -p "$LOG_DIR"
 

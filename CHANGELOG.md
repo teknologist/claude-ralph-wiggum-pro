@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- CHANGELOG.md to track all changes
-- Commit workflow documentation in CLAUDE.md
+## [2.0.4] - 2026-01-04
+
+### Changed
+- Renamed plugin from `ralph-wiggum` to `ralph-wiggum-pro`
+- Renamed plugin directory from `plugins/ralph-wiggum` to `plugins/ralph-wiggum-pro`
+- Updated log directory from `~/.claude/ralph-wiggum-logs/` to `~/.claude/ralph-wiggum-pro-logs/`
+- Updated GitHub repository to `teknologist/claude-ralph-wiggum-pro`
+
+### Fixed
+- Fixed failing unit tests in loop-manager.test.ts (test assertions didn't match implementation)
+- Added plugin tests and E2E tests to CI workflow
 
 ## [2.1.0] - 2026-01-04
 
@@ -47,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.0.0] - 2026-01-02
 
 ### Added
-- **Session Logging**: All loop sessions logged to `~/.claude/ralph-wiggum-logs/sessions.jsonl`
+- **Session Logging**: All loop sessions logged to `~/.claude/ralph-wiggum-pro-logs/sessions.jsonl`
 - **`/ralph-stats` Command**: View historical loop data with filtering
 - Cancellation logging to session history
 - Atomic writes for log entries

@@ -108,7 +108,7 @@ else
 fi
 
 # Check if log file was created
-LOG_FILE="$HOME/.claude/ralph-wiggum-logs/sessions.jsonl"
+LOG_FILE="$HOME/.claude/ralph-wiggum-pro-logs/sessions.jsonl"
 if [[ -f "$LOG_FILE" ]]; then
   echo -e "${GREEN}✓ Log file created${NC}"
   ((TESTS_PASSED++))

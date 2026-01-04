@@ -101,7 +101,7 @@ Test: --completion-promise '"DONE"'
 
 ### Run Tests
 ```bash
-cd plugins/ralph-wiggum/tests
+cd plugins/ralph-wiggum-pro/tests
 
 # Test error logging
 bash test-error-logging.sh

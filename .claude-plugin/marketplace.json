@@ -1,21 +1,21 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "teknologist-plugins",
-  "description": "Ralph Wiggum - Interactive self-referential AI loops for iterative development",
+  "description": "Ralph Wiggum Pro - Interactive self-referential AI loops for iterative development",
   "owner": {
     "name": "The Teknologist",
     "email": "teknologist@gmail.com"
   },
   "plugins": [
     {
-      "name": "ralph-wiggum",
+      "name": "ralph-wiggum-pro",
       "description": "Interactive self-referential AI loops for iterative development. Claude works on the same task repeatedly, seeing its previous work, until completion.",
-      "version": "2.0.2",
+      "version": "2.0.4",
       "author": {
         "name": "The Teknologist",
         "email": "teknologist@gmail.com"
       },
-      "source": "./plugins/ralph-wiggum",
+      "source": "./plugins/ralph-wiggum-pro",
       "category": "productivity",
       "strict": false
     }
