@@ -1,15 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Header } from '../components/Header';
 
 describe('Header', () => {
   it('should render the title', () => {
-    render(<Header />);
+    render(<Header viewMode="table" setViewMode={vi.fn()} />);
     expect(screen.getByText('Ralph Dashboard')).toBeInTheDocument();
   });
 
   it('should render the subtitle', () => {
-    render(<Header />);
+    render(<Header viewMode="card" setViewMode={vi.fn()} />);
     expect(
       screen.getByText('Monitor and manage Ralph Wiggum loops')
     ).toBeInTheDocument();

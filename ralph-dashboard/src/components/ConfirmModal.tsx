@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+
 interface ConfirmModalProps {
   isOpen: boolean;
   title: string;
@@ -19,10 +21,79 @@ export function ConfirmModal({
   onCancel,
   isLoading = false,
 }: ConfirmModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const titleId = useRef<string>(
+    `modal-title-${Math.random().toString(36).slice(2)}`
+  );
+  const messageId = useRef<string>(
+    `modal-message-${Math.random().toString(36).slice(2)}`
+  );
+  const confirmButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Focus management
+  useEffect(() => {
+    if (isOpen) {
+      // Focus confirm button when modal opens
+      confirmButtonRef.current?.focus();
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Restore body scroll
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  // Handle ESC key to close
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen && !isLoading) {
+        onCancel();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onCancel, isLoading]);
+
+  // Focus trap within modal
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Tab') {
+      const focusableElements = modalRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusableElements && focusableElements.length > 0) {
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[
+          focusableElements.length - 1
+        ] as HTMLElement;
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      aria-labelledby={titleId.current}
+      aria-describedby={messageId.current}
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50"
@@ -31,22 +102,41 @@ export function ConfirmModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-        <h2 className="text-xl font-bold text-claude-dark mb-2">{title}</h2>
-        <p className="text-gray-600 mb-6">{message}</p>
+      <div
+        ref={modalRef}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby={titleId.current}
+        aria-describedby={messageId.current}
+        className="relative bg-white rounded-t-lg sm:rounded-lg shadow-xl max-w-md w-full mx-4 p-6 pb-safe"
+        onKeyDown={handleKeyDown}
+      >
+        <h2
+          id={titleId.current}
+          className="text-xl font-bold text-claude-dark mb-2"
+        >
+          {title}
+        </h2>
+        <p id={messageId.current} className="text-gray-600 mb-6">
+          {message}
+        </p>
 
-        <div className="flex gap-3 justify-end">
+        <div className="flex gap-3 justify-end pb-safe sm:pb-0">
           <button
             onClick={onCancel}
             disabled={isLoading}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 min-h-[44px]"
+            aria-disabled={isLoading}
           >
             {cancelLabel}
           </button>
           <button
+            ref={confirmButtonRef}
             onClick={onConfirm}
             disabled={isLoading}
-            className="px-4 py-2 bg-claude-coral text-white rounded-lg hover:bg-claude-coral-dark transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 bg-claude-coral text-white rounded-lg hover:bg-claude-coral-dark transition-colors disabled:opacity-50 flex items-center gap-2 min-h-[44px]"
+            aria-disabled={isLoading}
+            aria-busy={isLoading}
           >
             {isLoading && (
               <svg
@@ -54,6 +144,7 @@ export function ConfirmModal({
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <circle
                   className="opacity-25"
@@ -70,7 +161,7 @@ export function ConfirmModal({
                 />
               </svg>
             )}
-            {confirmLabel}
+            <span>{confirmLabel}</span>
           </button>
         </div>
       </div>

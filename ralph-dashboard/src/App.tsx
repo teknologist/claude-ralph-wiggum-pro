@@ -1,16 +1,20 @@
+import { useState } from 'react';
 import { Header } from './components/Header';
 import { StatsBar } from './components/StatsBar';
 import { SessionTable } from './components/SessionTable';
 import { useSessions } from './hooks/useSessions';
 
+type ViewMode = 'table' | 'card';
+
 export function App() {
   const { data, isLoading, error } = useSessions();
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
 
   return (
     <div className="min-h-screen bg-claude-cream">
-      <Header />
+      <Header viewMode={viewMode} setViewMode={setViewMode} />
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {isLoading && (
           <div className="flex items-center justify-center py-12">
             <div className="flex items-center gap-3 text-gray-600">
@@ -54,7 +58,11 @@ export function App() {
               sessions={data.sessions}
               activeCount={data.active_count}
             />
-            <SessionTable sessions={data.sessions} />
+            <SessionTable
+              sessions={data.sessions}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+            />
           </>
         )}
       </main>

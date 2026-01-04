@@ -52,8 +52,9 @@ describe('ConfirmModal', () => {
 
   it('should disable buttons when loading', () => {
     render(<ConfirmModal {...defaultProps} isLoading={true} />);
-    expect(screen.getByText('Confirm')).toBeDisabled();
-    expect(screen.getByText('Cancel')).toBeDisabled();
+    // Text is now wrapped in span, so we need to find the closest button
+    expect(screen.getByText('Confirm').closest('button')).toBeDisabled();
+    expect(screen.getByText('Cancel').closest('button')).toBeDisabled();
   });
 
   it('should call onCancel when clicking backdrop', () => {

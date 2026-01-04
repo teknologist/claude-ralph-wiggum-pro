@@ -12,7 +12,27 @@ export default {
           dark: '#1A1A1A',
         },
       },
+      screens: {
+        xs: '375px', // iPhone SE and up
+        sm: '640px',
+        md: '768px',
+        lg: '1024px',
+        xl: '1280px',
+      },
+      spacing: {
+        safe: 'env(safe-area-inset)',
+      },
     },
   },
-  plugins: [],
+  plugins: [
+    // Enable safe-area variants for devices with notches
+    function ({ addUtilities }: { addUtilities: any }) {
+      addUtilities({
+        '.pt-safe': { 'padding-top': 'env(safe-area-inset-top)' },
+        '.pb-safe': { 'padding-bottom': 'env(safe-area-inset-bottom)' },
+        '.pl-safe': { 'padding-left': 'env(safe-area-inset-left)' },
+        '.pr-safe': { 'padding-right': 'env(safe-area-inset-right)' },
+      });
+    },
+  ],
 } satisfies Config;

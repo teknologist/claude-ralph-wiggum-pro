@@ -37,6 +37,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
         />
       );
+      // Task is in collapsible section now
+      fireEvent.click(screen.getByText('Show details'));
       expect(screen.getByText('My important task')).toBeInTheDocument();
     });
 
@@ -48,6 +50,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
         />
       );
+      // Task is in collapsible section now
+      fireEvent.click(screen.getByText('Show details'));
       expect(screen.getByText('No task description')).toBeInTheDocument();
     });
 
@@ -59,6 +63,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
         />
       );
+      // Completion promise is in collapsible section now
+      fireEvent.click(screen.getByText('Show details'));
       expect(screen.getByText('DONE')).toBeInTheDocument();
     });
 
@@ -70,6 +76,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
         />
       );
+      // Completion promise is in collapsible section now
+      fireEvent.click(screen.getByText('Show details'));
       expect(screen.getByText('None set')).toBeInTheDocument();
     });
 
@@ -81,6 +89,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
         />
       );
+      // Click "Show details" first since project path is in collapsible section
+      fireEvent.click(screen.getByText('Show details'));
       expect(screen.getByText('/home/user/my-project')).toBeInTheDocument();
     });
 
@@ -125,6 +135,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
         />
       );
+      // Loop ID is in collapsible section now
+      fireEvent.click(screen.getByText('Show details'));
       expect(screen.getByText('abc-123-def-456')).toBeInTheDocument();
       expect(screen.getByText('Loop ID')).toBeInTheDocument();
     });
@@ -137,6 +149,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
         />
       );
+      // Session ID is in collapsible section now
+      fireEvent.click(screen.getByText('Show details'));
       expect(screen.getByText('session-xyz-789')).toBeInTheDocument();
       expect(screen.getByText('Session ID')).toBeInTheDocument();
     });
@@ -152,6 +166,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
         />
       );
+      // IDs are in collapsible section now
+      fireEvent.click(screen.getByText('Show details'));
       const loopIdElement = container.querySelector(
         '[title="full-loop-uuid-here"]'
       );
@@ -223,6 +239,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
         />
       );
+      // State file path is in collapsible section now
+      fireEvent.click(screen.getByText('Show details'));
       expect(screen.getByText('State File')).toBeInTheDocument();
       expect(
         screen.getByText('/home/.claude/ralph-loop.abc.local.md')
@@ -310,6 +328,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
         />
       );
+      // Error reason is in collapsible section now
+      fireEvent.click(screen.getByText('Show details'));
       expect(screen.getByText('Error')).toBeInTheDocument();
       expect(screen.getByText('Something went wrong')).toBeInTheDocument();
     });
@@ -337,6 +357,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
         />
       );
+      // Click "Show details" to reveal collapsible section labels
+      fireEvent.click(screen.getByText('Show details'));
       expect(screen.getByText('Task')).toBeInTheDocument();
       expect(screen.getByText('Completion Promise')).toBeInTheDocument();
       expect(screen.getByText('Project Path')).toBeInTheDocument();

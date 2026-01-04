@@ -7,6 +7,7 @@ interface ProgressBarProps {
   showLabel?: boolean;
   showPercentage?: boolean;
   status?: Session['status'];
+  compact?: boolean; // Hide "X/Y" label, show only bar
 }
 
 /**
@@ -41,6 +42,7 @@ export function ProgressBar({
   showLabel = false,
   showPercentage = false,
   status,
+  compact = false,
 }: ProgressBarProps) {
   const percentage = calculatePercentage(current, max);
   const colorClass = getProgressColor(percentage, status);
@@ -57,9 +59,9 @@ export function ProgressBar({
   }
 
   if (size === 'sm') {
-    // Compact view for table rows
+    // Compact view for table rows and cards
     return (
-      <div className="flex items-center gap-2 min-w-[100px]">
+      <div className="flex items-center gap-1 sm:gap-2 min-w-[80px] sm:min-w-[100px]">
         <div
           className={`flex-1 ${heightClass} bg-gray-200 rounded-full overflow-hidden`}
         >
@@ -68,7 +70,12 @@ export function ProgressBar({
             style={{ width: `${percentage}%` }}
           />
         </div>
-        {showLabel && (
+        {showLabel && !compact && (
+          <span className="text-xs text-gray-600 whitespace-nowrap">
+            {current}/{max}
+          </span>
+        )}
+        {compact && (
           <span className="text-xs text-gray-600 whitespace-nowrap">
             {current}/{max}
           </span>

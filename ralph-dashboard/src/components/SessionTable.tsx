@@ -1,15 +1,27 @@
 import { useState, useMemo } from 'react';
 import type { Session } from '../../server/types';
 import { SessionRow } from './SessionRow';
+import { SessionCard } from './SessionCard';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+import { BREAKPOINTS } from '../constants/breakpoints';
 
 interface SessionTableProps {
   sessions: Session[];
+  viewMode: 'table' | 'card';
+  setViewMode: (mode: 'table' | 'card') => void;
 }
 
 type Tab = 'active' | 'archived';
 
-export function SessionTable({ sessions }: SessionTableProps) {
+export function SessionTable({
+  sessions,
+  viewMode,
+  setViewMode: _setViewMode, // Kept for interface consistency; used by Header, not here
+}: SessionTableProps) {
   const [activeTab, setActiveTab] = useState<Tab>('active');
+
+  // Auto-detect mobile: switch to card view on screens < 768px
+  const isMobile = useMediaQuery(BREAKPOINTS.MOBILE);
 
   const { activeSessions, archivedSessions } = useMemo(() => {
     const active = sessions.filter((s) => s.status === 'active');
@@ -28,13 +40,16 @@ export function SessionTable({ sessions }: SessionTableProps) {
   const displaySessions =
     activeTab === 'active' ? activeSessions : archivedSessions;
 
+  // Determine effective view mode (mobile forces card view)
+  const effectiveViewMode = isMobile ? 'card' : viewMode;
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       {/* Tabs */}
       <div className="flex border-b border-gray-200">
         <button
           onClick={() => setActiveTab('active')}
-          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+          className={`flex-1 px-3 sm:px-4 py-3 text-sm font-medium transition-colors ${
             activeTab === 'active'
               ? 'text-claude-coral border-b-2 border-claude-coral bg-claude-coral/5'
               : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
@@ -49,7 +64,7 @@ export function SessionTable({ sessions }: SessionTableProps) {
         </button>
         <button
           onClick={() => setActiveTab('archived')}
-          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+          className={`flex-1 px-3 sm:px-4 py-3 text-sm font-medium transition-colors ${
             activeTab === 'archived'
               ? 'text-claude-coral border-b-2 border-claude-coral bg-claude-coral/5'
               : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
@@ -62,39 +77,49 @@ export function SessionTable({ sessions }: SessionTableProps) {
         </button>
       </div>
 
-      {/* Table */}
+      {/* Content: Cards or Table */}
       {displaySessions.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Project
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Task
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Started
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Duration
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Iterations
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {displaySessions.map((session) => (
-                <SessionRow key={session.session_id} session={session} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        effectiveViewMode === 'card' ? (
+          // Card Grid Layout (mobile or desktop card view)
+          <div className="p-3 sm:p-4 grid grid-cols-1 gap-3 sm:gap-4">
+            {displaySessions.map((session) => (
+              <SessionCard key={session.session_id} session={session} />
+            ))}
+          </div>
+        ) : (
+          // Table Layout (desktop)
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Project
+                  </th>
+                  <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Task
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Started
+                  </th>
+                  <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Duration
+                  </th>
+                  <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Iterations
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {displaySessions.map((session) => (
+                  <SessionRow key={session.session_id} session={session} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
       ) : (
         <div className="p-8 text-center text-gray-500">
           {activeTab === 'active' ? (

@@ -43,13 +43,22 @@ const createMockSession = (overrides: Partial<Session> = {}): Session => ({
 });
 
 describe('SessionTable', () => {
+  const mockSetViewMode = vi.fn();
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders the table with Active Loops tab selected by default', () => {
     const sessions: Session[] = [createMockSession()];
-    render(<SessionTable sessions={sessions} />, { wrapper: createWrapper() });
+    render(
+      <SessionTable
+        sessions={sessions}
+        viewMode="table"
+        setViewMode={mockSetViewMode}
+      />,
+      { wrapper: createWrapper() }
+    );
 
     expect(screen.getByText('Active Loops')).toBeInTheDocument();
     expect(screen.getByText('Archived')).toBeInTheDocument();
@@ -64,7 +73,14 @@ describe('SessionTable', () => {
       createMockSession({ session_id: '2', status: 'active' }),
       createMockSession({ session_id: '3', status: 'success' }),
     ];
-    render(<SessionTable sessions={sessions} />, { wrapper: createWrapper() });
+    render(
+      <SessionTable
+        sessions={sessions}
+        viewMode="table"
+        setViewMode={mockSetViewMode}
+      />,
+      { wrapper: createWrapper() }
+    );
 
     expect(screen.getByText('2')).toBeInTheDocument(); // Active count badge
   });
@@ -75,7 +91,14 @@ describe('SessionTable', () => {
       createMockSession({ session_id: '2', status: 'success' }),
       createMockSession({ session_id: '3', status: 'cancelled' }),
     ];
-    render(<SessionTable sessions={sessions} />, { wrapper: createWrapper() });
+    render(
+      <SessionTable
+        sessions={sessions}
+        viewMode="table"
+        setViewMode={mockSetViewMode}
+      />,
+      { wrapper: createWrapper() }
+    );
 
     expect(screen.getByText('(2)')).toBeInTheDocument(); // Archived count
   });
@@ -84,7 +107,14 @@ describe('SessionTable', () => {
     const sessions: Session[] = [
       createMockSession({ session_id: '1', status: 'success' }),
     ];
-    render(<SessionTable sessions={sessions} />, { wrapper: createWrapper() });
+    render(
+      <SessionTable
+        sessions={sessions}
+        viewMode="table"
+        setViewMode={mockSetViewMode}
+      />,
+      { wrapper: createWrapper() }
+    );
 
     expect(screen.getByText('No active loops')).toBeInTheDocument();
     expect(screen.getByText('/ralph-loop')).toBeInTheDocument();
@@ -94,7 +124,14 @@ describe('SessionTable', () => {
     const sessions: Session[] = [
       createMockSession({ session_id: '1', status: 'active' }),
     ];
-    render(<SessionTable sessions={sessions} />, { wrapper: createWrapper() });
+    render(
+      <SessionTable
+        sessions={sessions}
+        viewMode="table"
+        setViewMode={mockSetViewMode}
+      />,
+      { wrapper: createWrapper() }
+    );
 
     // Switch to archived tab
     fireEvent.click(screen.getByText('Archived'));
@@ -115,7 +152,14 @@ describe('SessionTable', () => {
         project_name: 'archived-project',
       }),
     ];
-    render(<SessionTable sessions={sessions} />, { wrapper: createWrapper() });
+    render(
+      <SessionTable
+        sessions={sessions}
+        viewMode="table"
+        setViewMode={mockSetViewMode}
+      />,
+      { wrapper: createWrapper() }
+    );
 
     // Initially shows active sessions
     expect(screen.getByText('active-project')).toBeInTheDocument();
@@ -134,7 +178,14 @@ describe('SessionTable', () => {
 
   it('renders table headers correctly', () => {
     const sessions: Session[] = [createMockSession()];
-    render(<SessionTable sessions={sessions} />, { wrapper: createWrapper() });
+    render(
+      <SessionTable
+        sessions={sessions}
+        viewMode="table"
+        setViewMode={mockSetViewMode}
+      />,
+      { wrapper: createWrapper() }
+    );
 
     expect(screen.getByText('Project')).toBeInTheDocument();
     expect(screen.getByText('Task')).toBeInTheDocument();
@@ -160,7 +211,14 @@ describe('SessionTable', () => {
         started_at: newerDate,
       }),
     ];
-    render(<SessionTable sessions={sessions} />, { wrapper: createWrapper() });
+    render(
+      <SessionTable
+        sessions={sessions}
+        viewMode="table"
+        setViewMode={mockSetViewMode}
+      />,
+      { wrapper: createWrapper() }
+    );
 
     const projectNames = screen.getAllByText(/project/);
     // Both projects should show (order within table rows)
@@ -174,7 +232,14 @@ describe('SessionTable', () => {
       createMockSession({ session_id: '3', status: 'error' }),
       createMockSession({ session_id: '4', status: 'max_iterations' }),
     ];
-    render(<SessionTable sessions={sessions} />, { wrapper: createWrapper() });
+    render(
+      <SessionTable
+        sessions={sessions}
+        viewMode="table"
+        setViewMode={mockSetViewMode}
+      />,
+      { wrapper: createWrapper() }
+    );
 
     // Switch to archived tab
     fireEvent.click(screen.getByText('Archived'));
@@ -184,7 +249,14 @@ describe('SessionTable', () => {
   });
 
   it('handles empty sessions array', () => {
-    render(<SessionTable sessions={[]} />, { wrapper: createWrapper() });
+    render(
+      <SessionTable
+        sessions={[]}
+        viewMode="table"
+        setViewMode={mockSetViewMode}
+      />,
+      { wrapper: createWrapper() }
+    );
 
     expect(screen.getByText('No active loops')).toBeInTheDocument();
   });

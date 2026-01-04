@@ -164,7 +164,8 @@ describe('SessionRow', () => {
       const row = screen.getByText('test-project').closest('tr');
       fireEvent.click(row!);
 
-      // Should show SessionDetail content
+      // Need to click "Show details" since Project Path is in collapsible section
+      fireEvent.click(screen.getByText('Show details'));
       expect(screen.getByText('Project Path')).toBeInTheDocument();
     });
 
@@ -173,6 +174,9 @@ describe('SessionRow', () => {
 
       const row = screen.getByText('test-project').closest('tr');
       fireEvent.click(row!);
+
+      // Need to click "Show details" since Project Path is in collapsible section
+      fireEvent.click(screen.getByText('Show details'));
       expect(screen.getByText('Project Path')).toBeInTheDocument();
 
       fireEvent.click(row!);
