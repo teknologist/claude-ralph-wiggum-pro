@@ -12,9 +12,24 @@ Execute the setup script to initialize the Ralph loop:
 ```!
 "${CLAUDE_PLUGIN_ROOT}/scripts/setup-ralph-loop.sh" $ARGUMENTS
 
-# Extract and display completion promise if set (use exact session ID, not ls -t which has race conditions)
-STATE_FILE=".claude/ralph-loop.${CLAUDE_SESSION_ID}.local.md"
-if [ -n "$CLAUDE_SESSION_ID" ] && [ -f "$STATE_FILE" ]; then
+# Find state file for this session by scanning frontmatter
+# If multiple exist (edge case from failed cleanup), pick most recent by started_at
+STATE_FILE=""
+LATEST_TS=""
+if [ -n "$CLAUDE_SESSION_ID" ]; then
+  for f in .claude/ralph-loop.*.local.md; do
+    [ -f "$f" ] || continue
+    F_SID=$(grep '^session_id:' "$f" 2>/dev/null | head -1 | sed 's/session_id: *"\{0,1\}\([^"]*\)"\{0,1\}.*/\1/' || echo "")
+    if [ "$F_SID" = "$CLAUDE_SESSION_ID" ]; then
+      F_TS=$(grep '^started_at:' "$f" 2>/dev/null | head -1 | sed 's/started_at: *"\{0,1\}\([^"]*\)"\{0,1\}.*/\1/' || echo "")
+      if [ -z "$STATE_FILE" ] || [ "$F_TS" \> "$LATEST_TS" ]; then
+        STATE_FILE="$f"
+        LATEST_TS="$F_TS"
+      fi
+    fi
+  done
+fi
+if [ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ]; then
   PROMISE=$(grep '^completion_promise:' "$STATE_FILE" | sed 's/completion_promise: *//' | sed 's/^"\(.*\)"$/\1/')
   if [ -n "$PROMISE" ] && [ "$PROMISE" != "null" ]; then
     echo ""

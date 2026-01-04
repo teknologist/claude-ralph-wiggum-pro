@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.8] - 2026-01-04
+
+### Fixed
+- **State file lookup in ralph-loop.md**: Fixed incorrect path pattern that used `${CLAUDE_SESSION_ID}` instead of scanning frontmatter for `session_id` match (consistent with stop-hook.sh)
+- Added fallback to pick most recent state file by `started_at` timestamp if multiple exist (edge case from failed cleanup)
+
 ## [2.0.7] - 2026-01-04
 
 ### Added
