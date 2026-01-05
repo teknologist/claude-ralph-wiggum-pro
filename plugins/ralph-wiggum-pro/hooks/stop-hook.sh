@@ -36,22 +36,55 @@ if [[ ! "$CURRENT_SESSION_ID" =~ ^[a-zA-Z0-9._-]+$ ]] || [[ "$CURRENT_SESSION_ID
   exit 0
 fi
 
-# Find state file for THIS session
-# State files are named with loop_id but contain session_id in frontmatter
-RALPH_STATE_FILE=""
-for STATE_FILE in .claude/ralph-loop.*.local.md; do
-  [[ -f "$STATE_FILE" ]] || continue
-  # Check if this state file belongs to current session
-  # Using grep + sed for cross-platform compatibility (BSD/GNU)
-  FILE_SESSION_ID=$(grep '^session_id:' "$STATE_FILE" 2>/dev/null | head -1 | sed 's/session_id: *"\{0,1\}\([^"]*\)"\{0,1\}.*/\1/' || echo "")
-  if [[ "$FILE_SESSION_ID" == "$CURRENT_SESSION_ID" ]]; then
-    RALPH_STATE_FILE="$STATE_FILE"
-    break
-  fi
-done
+# Function to find state file path from session log
+find_state_file_from_log() {
+  local session_id="$1"
+  local log_file="$HOME/.claude/ralph-wiggum-pro-logs/sessions.jsonl"
 
-if [[ -z "$RALPH_STATE_FILE" ]] || [[ ! -f "$RALPH_STATE_FILE" ]]; then
+  [[ -f "$log_file" ]] || return 1
+
+  # Find most recent entry for this session with state_file_path
+  # Use jq to extract state_file_path from the matching entry
+  local state_path
+  state_path=$(jq -rs --arg sid "$session_id" \
+    'select(.session_id == $sid and .state_file_path) | .state_file_path' \
+    "$log_file" | tail -n 1)
+
+  # Validate the returned path for security (prevent path traversal)
+  # - Must be absolute path (starts with /)
+  # - Must not contain .. sequences
+  # - Must end with .local.md extension
+  if [[ -z "$state_path" ]] || [[ "$state_path" == *".."* ]] || [[ ! "$state_path" =~ ^/.*\.local\.md$ ]]; then
+    return 1
+  fi
+
+  [[ -f "$state_path" ]] || return 1
+  echo "$state_path"
+  return 0
+}
+
+# Find state file for THIS session
+# First try: Query log file for absolute path (works from any directory)
+RALPH_STATE_FILE=""
+RALPH_STATE_FILE=$(find_state_file_from_log "$CURRENT_SESSION_ID")
+
+# Fallback: Use relative glob (for backward compatibility)
+if [[ -z "$RALPH_STATE_FILE" ]]; then
+  for STATE_FILE in .claude/ralph-loop.*.local.md; do
+    [[ -f "$STATE_FILE" ]] || continue
+    # Check if this state file belongs to current session
+    # Using grep + sed for cross-platform compatibility (BSD/GNU)
+    FILE_SESSION_ID=$(grep '^session_id:' "$STATE_FILE" 2>/dev/null | head -1 | sed 's/session_id: *"\{0,1\}\([^"]*\)"\{0,1\}.*/\1/' || echo "")
+    if [[ "$FILE_SESSION_ID" == "$CURRENT_SESSION_ID" ]]; then
+      RALPH_STATE_FILE="$STATE_FILE"
+      break
+    fi
+  done
+fi
+
+if [[ ! -f "$RALPH_STATE_FILE" ]]; then
   # No active loop for this session - allow exit
+  # May happen if session was cancelled from dashboard or state file was manually deleted
   exit 0
 fi
 
@@ -248,8 +281,8 @@ if [[ -z "$PROMPT_TEXT" ]]; then
 fi
 
 # Update iteration in frontmatter (portable across macOS and Linux)
-# Create temp file, then atomically replace
-TEMP_FILE="${RALPH_STATE_FILE}.tmp.$$"
+# Create temp file securely with mktemp, then atomically replace
+TEMP_FILE=$(mktemp "${RALPH_STATE_FILE}.tmp.XXXXXX") || exit 1
 sed "s/^iteration: .*/iteration: $NEXT_ITERATION/" "$RALPH_STATE_FILE" > "$TEMP_FILE"
 mv "$TEMP_FILE" "$RALPH_STATE_FILE"
 

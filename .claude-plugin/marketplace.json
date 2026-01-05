@@ -10,7 +10,7 @@
     {
       "name": "ralph-wiggum-pro",
       "description": "Interactive self-referential AI loops for iterative development. Claude works on the same task repeatedly, seeing its previous work, until completion.",
-      "version": "2.0.13",
+      "version": "2.0.14",
       "author": {
         "name": "The Teknologist",
         "email": "teknologist@gmail.com"
@@ -19,5 +19,8 @@
       "category": "productivity",
       "strict": false
     }
-  ]
+  ],
+  "metadata": {
+    "version": "2.0.14"
+  }
 }

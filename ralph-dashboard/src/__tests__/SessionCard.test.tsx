@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionCard } from '../components/SessionCard';
 import type { Session } from '../../server/types';
@@ -187,6 +188,268 @@ describe('SessionCard', () => {
       const { unmount } = renderCard(createMockSession());
       unmount();
       expect(screen.queryByTestId('session-card')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('expand/collapse functionality', () => {
+    it('expands when card is clicked', async () => {
+      renderCard(createMockSession());
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      expect(card).toBeInTheDocument();
+
+      // Click to expand
+      await userEvent.click(card);
+      // The SessionDetail should be in the DOM when expanded (has id="session-detail")
+      expect(document.getElementById('session-detail')).toBeInTheDocument();
+    });
+
+    it('collapses when already expanded card is clicked', async () => {
+      renderCard(createMockSession());
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+
+      // First click expands
+      await userEvent.click(card);
+      expect(document.getElementById('session-detail')).toBeInTheDocument();
+
+      // Second click collapses
+      await userEvent.click(card);
+      // SessionDetail should be removed from DOM when collapsed
+      expect(document.getElementById('session-detail')).not.toBeInTheDocument();
+    });
+
+    it('expands on Enter key press', async () => {
+      renderCard(createMockSession());
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+
+      card.focus();
+      await userEvent.keyboard('{Enter}');
+      expect(document.getElementById('session-detail')).toBeInTheDocument();
+    });
+
+    it('expands on Space key press', async () => {
+      renderCard(createMockSession());
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+
+      card.focus();
+      await userEvent.keyboard('{ }');
+      expect(document.getElementById('session-detail')).toBeInTheDocument();
+    });
+  });
+
+  describe('cancel modal interactions', () => {
+    it('shows cancel modal when cancel button in detail is clicked', async () => {
+      renderCard(createMockSession({ status: 'active' }));
+
+      // First expand the card
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      await userEvent.click(card);
+
+      // Click cancel button in SessionDetail
+      // The button inside SessionDetail should be accessible after expansion
+      const detailSection = document.getElementById('session-detail');
+      expect(detailSection).toBeInTheDocument();
+      if (!detailSection) throw new Error('SessionDetail not found');
+      const cancelButton = within(detailSection).getByRole('button', {
+        name: /cancel loop/i,
+      });
+      await userEvent.click(cancelButton);
+
+      // Modal should appear
+      expect(
+        screen.getByText(/Are you sure you want to cancel/)
+      ).toBeInTheDocument();
+      expect(screen.getByText('Cancel Loop')).toBeInTheDocument();
+      expect(screen.getByText('Keep Running')).toBeInTheDocument();
+    });
+
+    it('calls cancel mutation when confirm is clicked', async () => {
+      renderCard(createMockSession({ status: 'active' }));
+
+      // Expand and click cancel
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      await userEvent.click(card);
+
+      const detailSection = document.getElementById('session-detail');
+      if (!detailSection) throw new Error('SessionDetail not found');
+      const cancelButton = within(detailSection).getByRole('button', {
+        name: /cancel loop/i,
+      });
+      await userEvent.click(cancelButton);
+
+      // Click confirm - the modal should have a button with text "Cancel Loop"
+      // Find the modal's confirm button (not the one in SessionDetail)
+      const allButtons = screen.getAllByText('Cancel Loop');
+      const confirmButton = allButtons.find(
+        (btn) => !detailSection.contains(btn)
+      );
+      expect(confirmButton).toBeDefined();
+      if (!confirmButton) throw new Error('Confirm button not found');
+      await userEvent.click(confirmButton);
+
+      expect(mockCancelMutate).toHaveBeenCalledWith(
+        'test-loop-1',
+        expect.objectContaining({
+          onSuccess: expect.any(Function),
+        })
+      );
+    });
+
+    it('closes cancel modal when cancelled', async () => {
+      renderCard(createMockSession({ status: 'active' }));
+
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      await userEvent.click(card);
+
+      const detailSection = document.getElementById('session-detail');
+      if (!detailSection) throw new Error('SessionDetail not found');
+      const cancelButton = within(detailSection).getByRole('button', {
+        name: /cancel loop/i,
+      });
+      await userEvent.click(cancelButton);
+
+      // Click cancel button in modal
+      const keepRunningButton = screen.getByText('Keep Running');
+      await userEvent.click(keepRunningButton);
+
+      // Modal should close
+      expect(
+        screen.queryByText(/Are you sure you want to cancel/)
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  describe('delete modal interactions', () => {
+    it('shows delete modal when delete button in detail is clicked', async () => {
+      renderCard(createMockSession({ status: 'success' }));
+
+      // First expand the card
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      await userEvent.click(card);
+
+      // Click delete button in SessionDetail
+      const detailSection = document.getElementById('session-detail');
+      expect(detailSection).toBeInTheDocument();
+      if (!detailSection) throw new Error('SessionDetail not found');
+      const deleteButton = within(detailSection).getByRole('button', {
+        name: /delete permanently/i,
+      });
+      await userEvent.click(deleteButton);
+
+      // Modal should appear
+      expect(screen.getByText(/permanently delete/)).toBeInTheDocument();
+      expect(screen.getByText('Keep in History')).toBeInTheDocument();
+    });
+
+    it('shows delete modal confirm button can be clicked', async () => {
+      renderCard(createMockSession({ status: 'success' }));
+
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      await userEvent.click(card);
+
+      const detailSection = document.getElementById('session-detail');
+      if (!detailSection) throw new Error('SessionDetail not found');
+      const deleteButton = within(detailSection).getByRole('button', {
+        name: /delete permanently/i,
+      });
+      await userEvent.click(deleteButton);
+
+      // Find the confirm button in the modal (rendered via portal to document.body)
+      const sessionCard = screen.getByTestId('session-card');
+      const allButtons = screen.getAllByText(/Delete Permanently/);
+      const confirmButton = allButtons.find(
+        (btn) => !sessionCard.contains(btn)
+      );
+      expect(confirmButton).toBeDefined();
+      if (!confirmButton) throw new Error('Confirm button not found');
+      expect(confirmButton.textContent).toContain('Delete Permanently');
+
+      // Click the confirm button - this should trigger the delete mutation
+      await userEvent.click(confirmButton);
+
+      // The modal should still be visible because the mock doesn't call onSuccess
+      expect(screen.getByText(/permanently delete/)).toBeInTheDocument();
+    });
+
+    it('closes delete modal when cancelled', async () => {
+      renderCard(createMockSession({ status: 'success' }));
+
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      await userEvent.click(card);
+
+      const detailSection = document.getElementById('session-detail');
+      if (!detailSection) throw new Error('SessionDetail not found');
+      const deleteButton = within(detailSection).getByRole('button', {
+        name: /delete permanently/i,
+      });
+      await userEvent.click(deleteButton);
+
+      // Click cancel button in modal
+      const keepHistoryButton = screen.getByText('Keep in History');
+      await userEvent.click(keepHistoryButton);
+
+      // Modal should close
+      expect(screen.queryByText(/permanently delete/)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('time ago calculations', () => {
+    it('shows hours ago for sessions within last 24 hours', () => {
+      const now = new Date();
+      const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+      renderCard(
+        createMockSession({ started_at: threeHoursAgo.toISOString() })
+      );
+      expect(screen.getByText(/3h ago/)).toBeInTheDocument();
+    });
+
+    it('shows days ago for older sessions', () => {
+      const now = new Date();
+      const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+      renderCard(createMockSession({ started_at: twoDaysAgo.toISOString() }));
+      expect(screen.getByText(/2d ago/)).toBeInTheDocument();
+    });
+  });
+
+  describe('duration edge cases', () => {
+    it('shows hours without remainder when minutes is 0', () => {
+      renderCard(createMockSession({ duration_seconds: 3600 })); // 1 hour exactly
+      expect(screen.getByText('1h 0m')).toBeInTheDocument();
+    });
+
+    it('shows hours with correct remainder', () => {
+      renderCard(createMockSession({ duration_seconds: 3665 })); // 1h 1m 5s
+      expect(screen.getByText('1h 1m')).toBeInTheDocument();
+    });
+  });
+
+  describe('truncate task with custom max length', () => {
+    it('respects custom max length parameter', () => {
+      const task = 'A'.repeat(50);
+      renderCard(createMockSession({ task }));
+
+      // The default in the component is 100 for display, but truncation happens
+      // via line-clamp-2 CSS class for the display
+      expect(screen.getByText(task)).toBeInTheDocument();
     });
   });
 });

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.14] - 2026-01-05
+
+### Fixed
+- **State file path resolution**: Stop-hook now queries session log for absolute state file path, fixing bug where completion wasn't logged when exiting from subdirectory (e.g., `ralph-dashboard/`)
+- **Security**: Added path validation for state_file_path from log to prevent path traversal attacks
+- **Security**: Temp file creation now uses `mktemp` for atomic file operations instead of PID-based naming
+
+### Changed
+- **Dashboard tests**: Refactored DOM queries to use Testing Library `within()` helper with proper null guards instead of non-null assertions
+- **Dashboard tests**: Added 15 new tests for SessionCard covering expand/collapse, modal interactions, time calculations, and edge cases (now 36 tests total, 91.46% function coverage)
+- **Dashboard**: Added `@testing-library/user-event` dependency for improved user interaction testing
+
 ## [2.0.13] - 2026-01-04
 
 ### Fixed
