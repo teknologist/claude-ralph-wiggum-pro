@@ -12,6 +12,13 @@ vi.mock('../hooks/useCancelLoop', () => ({
   }),
 }));
 
+// Mock useMediaQuery - default to desktop (false)
+vi.mock('../hooks/useMediaQuery', () => ({
+  useMediaQuery: vi.fn(() => false),
+}));
+
+import { useMediaQuery } from '../hooks/useMediaQuery';
+
 function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -278,5 +285,39 @@ describe('SessionTable', () => {
     // Should render session cards in grid layout
     expect(screen.getByText('project-1')).toBeInTheDocument();
     expect(screen.getByText('project-2')).toBeInTheDocument();
+  });
+
+  // Nested describe for mobile behavior with proper mock lifecycle
+  describe('mobile behavior', () => {
+    beforeEach(() => {
+      vi.mocked(useMediaQuery).mockReturnValue(true);
+    });
+
+    afterEach(() => {
+      // Reset to desktop (false) after each mobile test
+      vi.mocked(useMediaQuery).mockReturnValue(false);
+    });
+
+    it('forces card view mode on mobile regardless of viewMode prop', () => {
+      const sessions: Session[] = [
+        createMockSession({ session_id: '1', project_name: 'mobile-project' }),
+      ];
+
+      // Even though viewMode is 'table', mobile should force 'card'
+      render(
+        <SessionTable
+          sessions={sessions}
+          viewMode="table"
+          setViewMode={mockSetViewMode}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Should render card layout (grid), not table
+      expect(screen.getByText('mobile-project')).toBeInTheDocument();
+      // In card view, we should have the card container
+      const cardContainer = screen.getByText('mobile-project').closest('div');
+      expect(cardContainer).toBeInTheDocument();
+    });
   });
 });

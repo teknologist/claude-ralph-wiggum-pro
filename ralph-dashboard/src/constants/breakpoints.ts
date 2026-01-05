@@ -12,13 +12,3 @@ export const BREAKPOINTS = {
   /** Desktop/tablet (>= 768px) */
   DESKTOP: '(min-width: 768px)' as const,
 } as const;
-
-/** Swipe gesture configuration */
-export const SWIPE_CONFIG = {
-  /** Width of swipe action button in pixels */
-  BUTTON_WIDTH: 80,
-  /** Minimum swipe distance to trigger action (50% of button width) */
-  THRESHOLD: 40,
-  /** Transition duration in milliseconds */
-  ANIMATION_DURATION: 200,
-} as const;

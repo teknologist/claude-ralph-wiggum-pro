@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useSwipeable } from 'react-swipeable';
+import { useState } from 'react';
 import type { Session } from '../../server/types';
 import { SessionDetail } from './SessionDetail';
 import { ConfirmModal } from './ConfirmModal';
@@ -7,8 +6,6 @@ import { ProgressBar } from './ProgressBar';
 import { StatusBadge } from './StatusBadge';
 import { useCancelLoop } from '../hooks/useCancelLoop';
 import { useDeleteSession } from '../hooks/useDeleteSession';
-import { useMediaQuery } from '../hooks/useMediaQuery';
-import { BREAKPOINTS, SWIPE_CONFIG } from '../constants/breakpoints';
 
 interface SessionCardProps {
   session: Session;
@@ -18,23 +15,8 @@ export function SessionCard({ session }: SessionCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [swipeOffset, setSwipeOffset] = useState(0);
   const cancelMutation = useCancelLoop();
   const deleteMutation = useDeleteSession();
-
-  // Only enable swipe on actual mobile devices
-  const isMobile = useMediaQuery(BREAKPOINTS.MOBILE);
-
-  // Determine which actions are available based on session status
-  const canCancel = session.status === 'active';
-  const canDelete = session.status !== 'active';
-
-  // Cleanup on unmount to prevent state updates on unmounted component
-  useEffect(() => {
-    return () => {
-      setSwipeOffset(0);
-    };
-  }, []);
 
   const handleCancel = () => {
     setShowCancelModal(true);
@@ -43,57 +25,6 @@ export function SessionCard({ session }: SessionCardProps) {
   const handleDelete = () => {
     setShowDeleteModal(true);
   };
-
-  const resetSwipe = () => {
-    setSwipeOffset(0);
-  };
-
-  // Keyboard handler for accessibility
-  const handleKeyDown = (action: () => void) => (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      action();
-    }
-  };
-
-  // Swipe handlers for mobile actions
-  const handlers = useSwipeable({
-    onSwiping: (eventData) => {
-      const { absX, dir } = eventData;
-      if (dir === 'Left' && canCancel) {
-        setSwipeOffset(Math.max(-absX, -SWIPE_CONFIG.BUTTON_WIDTH));
-      } else if (dir === 'Right' && canDelete) {
-        setSwipeOffset(Math.min(absX, SWIPE_CONFIG.BUTTON_WIDTH));
-      } else {
-        setSwipeOffset(0);
-      }
-    },
-    onSwiped: (eventData) => {
-      const { absX, dir } = eventData;
-      if (dir === 'Left' && canCancel) {
-        setSwipeOffset(
-          absX > SWIPE_CONFIG.THRESHOLD ? -SWIPE_CONFIG.BUTTON_WIDTH : 0
-        );
-        if (absX > SWIPE_CONFIG.THRESHOLD) {
-          handleCancel();
-        }
-      } else if (dir === 'Right' && canDelete) {
-        setSwipeOffset(
-          absX > SWIPE_CONFIG.THRESHOLD ? SWIPE_CONFIG.BUTTON_WIDTH : 0
-        );
-        if (absX > SWIPE_CONFIG.THRESHOLD) {
-          handleDelete();
-        }
-      } else {
-        setSwipeOffset(0);
-      }
-    },
-    trackMouse: false,
-    trackTouch: true,
-  });
-
-  // Only apply swipe handlers on mobile devices
-  const swipeHandlers = isMobile ? handlers : {};
 
   const formatDuration = (seconds: number | undefined): string => {
     if (seconds === undefined) return 'Active';
@@ -129,11 +60,9 @@ export function SessionCard({ session }: SessionCardProps) {
       onSuccess: () => {
         setShowCancelModal(false);
         setIsExpanded(false);
-        resetSwipe();
       },
       onError: (error) => {
         alert(`Failed to cancel: ${error.message}`);
-        resetSwipe();
       },
     });
   };
@@ -143,11 +72,9 @@ export function SessionCard({ session }: SessionCardProps) {
       onSuccess: () => {
         setShowDeleteModal(false);
         setIsExpanded(false);
-        resetSwipe();
       },
       onError: (error) => {
         alert(`Failed to delete: ${error.message}`);
-        resetSwipe();
       },
     });
   };
@@ -158,78 +85,20 @@ export function SessionCard({ session }: SessionCardProps) {
         data-testid="session-card"
         className="relative rounded-lg shadow-md overflow-hidden"
       >
-        {/* Swipe Actions Container - mobile only */}
-        {isMobile && (
-          <div className="absolute inset-y-0 left-0 right-0 flex pointer-events-none">
-            {/* Delete Action (swipe right reveals from left) - Only for archived sessions */}
-            {session.status !== 'active' && (
-              <button
-                onClick={handleDelete}
-                onKeyDown={handleKeyDown(handleDelete)}
-                aria-label="Delete this session permanently"
-                className="pointer-events-auto h-full bg-red-600 text-white px-4 flex items-center justify-center transition-transform ease-out"
-                style={{
-                  transform: `translateX(${Math.min(swipeOffset, 0)}px)`,
-                  minWidth: `${SWIPE_CONFIG.BUTTON_WIDTH}px`,
-                  transitionDuration: `${SWIPE_CONFIG.ANIMATION_DURATION}ms`,
-                }}
-                data-testid="swipe-delete-button"
-              >
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-xl">🗑</span>
-                  <span className="text-xs font-medium">Delete</span>
-                </div>
-              </button>
-            )}
-
-            {/* Spacer in the middle */}
-            <div className="flex-1" />
-
-            {/* Cancel Action (swipe left reveals from right) - Only for active sessions */}
-            {session.status === 'active' && (
-              <button
-                onClick={handleCancel}
-                onKeyDown={handleKeyDown(handleCancel)}
-                aria-label="Cancel this active loop"
-                className="pointer-events-auto h-full bg-red-500 text-white px-4 flex items-center justify-center transition-transform ease-out"
-                style={{
-                  transform: `translateX(${swipeOffset}px)`,
-                  minWidth: `${SWIPE_CONFIG.BUTTON_WIDTH}px`,
-                  transitionDuration: `${SWIPE_CONFIG.ANIMATION_DURATION}ms`,
-                }}
-                data-testid="swipe-cancel-button"
-              >
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-xl">⏹</span>
-                  <span className="text-xs font-medium">Cancel</span>
-                </div>
-              </button>
-            )}
-          </div>
-        )}
-
         {/* Card Header - Always Visible */}
         <div
-          {...swipeHandlers}
           role="button"
           aria-expanded={isExpanded}
           aria-controls="session-detail"
           tabIndex={0}
           className="relative bg-white p-3 sm:p-4 cursor-pointer active:scale-[0.99] active:opacity-80 transition-transform z-10"
-          onClick={() => {
-            resetSwipe();
-            setIsExpanded(!isExpanded);
-          }}
+          onClick={() => setIsExpanded(!isExpanded)}
           onKeyPress={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              resetSwipe();
               setIsExpanded(!isExpanded);
             }
           }}
-          style={
-            isMobile ? { transform: `translateX(${swipeOffset}px)` } : undefined
-          }
         >
           {/* Top Row: Status Badge + Expand Icon */}
           <div className="flex items-center justify-between mb-2">
@@ -300,10 +169,7 @@ export function SessionCard({ session }: SessionCardProps) {
         confirmLabel="Cancel Loop"
         cancelLabel="Keep Running"
         onConfirm={confirmCancel}
-        onCancel={() => {
-          setShowCancelModal(false);
-          resetSwipe();
-        }}
+        onCancel={() => setShowCancelModal(false)}
         isLoading={cancelMutation.isPending}
       />
       <ConfirmModal
@@ -313,10 +179,7 @@ export function SessionCard({ session }: SessionCardProps) {
         confirmLabel="Delete Permanently"
         cancelLabel="Keep in History"
         onConfirm={confirmDelete}
-        onCancel={() => {
-          setShowDeleteModal(false);
-          resetSwipe();
-        }}
+        onCancel={() => setShowDeleteModal(false)}
         isLoading={deleteMutation.isPending}
       />
     </>

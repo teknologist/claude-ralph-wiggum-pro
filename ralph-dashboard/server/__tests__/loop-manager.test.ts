@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Session } from '../types';
 import * as fs from 'fs';
+import * as path from 'path';
 
 // We need to import after mocking
 vi.mock('fs');
+vi.mock('path');
 
 const mockExistsSync = vi.mocked(fs.existsSync);
 const mockUnlinkSync = vi.mocked(fs.unlinkSync);
+const mockResolve = vi.mocked(path.resolve);
 
 // Import the module after mocking
 const { cancelLoop, checkStateFileExists } =
@@ -15,6 +18,17 @@ const { cancelLoop, checkStateFileExists } =
 describe('loop-manager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Set up default mock behavior for resolve - return simple paths
+    // First arg is usually the base path, subsequent args are joined
+    mockResolve.mockImplementation((...args: string[]) => {
+      // Simple implementation: join all non-empty args with /
+      const filtered = args.filter(
+        (a) => a !== undefined && a !== null && a !== ''
+      );
+      if (filtered.length === 0) return '/';
+      if (filtered.length === 1) return filtered[0];
+      return filtered.join('/');
+    });
   });
 
   describe('cancelLoop', () => {
@@ -121,18 +135,16 @@ describe('loop-manager', () => {
       expect(result.message).toContain('Invalid state file path');
     });
 
-    it('should fail when resolve throws an error for invalid path', () => {
-      // Create a session with a path that might cause resolve to throw
-      const sessionInvalidPath: Session = {
-        ...activeSession,
-        state_file_path: '\x00invalid-path', // Null byte can cause errors
-      };
+    it('should fail when resolve throws an error', () => {
+      // Mock resolve to throw an error (simulates invalid path)
+      mockResolve.mockImplementation(() => {
+        throw new Error('Invalid path');
+      });
 
       mockExistsSync.mockReturnValue(true);
 
-      const result = cancelLoop(sessionInvalidPath);
+      const result = cancelLoop(activeSession);
 
-      // Should handle the error gracefully
       expect(result.success).toBe(false);
       expect(result.message).toContain('Invalid state file path');
     });

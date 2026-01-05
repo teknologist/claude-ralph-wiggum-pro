@@ -46,6 +46,8 @@ find_state_file_from_log() {
   # Find most recent entry for this session with state_file_path
   # Use jq to extract state_file_path from the matching entry
   # Filter out empty lines first to prevent jq errors on malformed JSONL
+  # Note: || true prevents grep from exiting with 1 when no matches (due to set -e)
+  # Empty state_path is handled by validation below
   local state_path
   state_path=$( (grep -v '^[[:space:]]*$' "$log_file" || true) | jq -rs --arg sid "$session_id" \
     'map(select(.session_id == $sid and .state_file_path)) | .[].state_file_path' \
@@ -91,6 +93,8 @@ fi
 
 # Parse markdown frontmatter (YAML between ---) and extract values
 FRONTMATTER=$(sed -n '/^---$/,/^---$/{ /^---$/d; p; }' "$RALPH_STATE_FILE")
+# Extract fields with empty string default if not found (grep exits 1 when no match)
+# The || echo "" ensures script continues with set -e, and empty values are validated below
 ITERATION=$(echo "$FRONTMATTER" | grep '^iteration:' | sed 's/iteration: *//' || echo "")
 MAX_ITERATIONS=$(echo "$FRONTMATTER" | grep '^max_iterations:' | sed 's/max_iterations: *//' || echo "")
 # Extract completion_promise and strip surrounding quotes if present

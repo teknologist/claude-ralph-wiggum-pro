@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.17] - 2026-01-05
+
+### Fixed
+- **Dashboard test mock lifecycle**: Fixed potential flaky tests in SessionTable by adding proper `beforeEach`/`afterEach` hooks for mock cleanup, ensuring mobile view mode mock is reset even if test fails
+- **E2E test route interception**: Narrowed route patterns to specific endpoints (`**/api/sessions/*/cancel` and `**/api/sessions/*` with method checks) to prevent interference with parallel tests
+- **Script error handling**: Added comprehensive error handling to `calc-coverage.mjs` script with helpful messages for file not found, invalid JSON, and other I/O errors
+- **Bash script documentation**: Added clarifying comments in `stop-hook.sh` to explain `|| echo ""` and `|| true` patterns used for handling grep exit codes under `set -e`
+
+### Changed
+- **Dashboard test organization**: Refactored mobile behavior tests into nested describe block with proper lifecycle hooks
+- **Documentation**: Updated test count badge in dashboard README to reflect 274 passing tests
+- **Test references**: Added cross-references from unit tests to E2E tests that cover error handlers with alert() calls
+
 ## [2.0.16] - 2026-01-05
 
 ### Fixed

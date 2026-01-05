@@ -209,4 +209,18 @@ describe('handleDeleteSession', () => {
     expect(data.error).toBe('DELETE_ERROR');
     expect(data.message).toContain('Database connection failed');
   });
+
+  it('returns 500 when non-Error object is thrown', async () => {
+    // Test with string (not an Error instance)
+    vi.spyOn(logParser, 'getSessionById').mockImplementation(() => {
+      throw 'String error message';
+    });
+
+    const response = handleDeleteSession('error-123');
+
+    expect(response.status).toBe(500);
+    const data = await response.json();
+    expect(data.error).toBe('DELETE_ERROR');
+    expect(data.message).toContain('String error message');
+  });
 });
