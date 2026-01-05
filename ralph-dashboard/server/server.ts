@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'fs';
 import { handleGetSessions, handleGetSession } from './api/sessions';
 import { handleCancelSession } from './api/cancel';
 import { handleDeleteSession } from './api/delete';
+import { handleArchiveSession } from './api/archive';
 
 interface ServerOptions {
   port: number;
@@ -135,6 +136,19 @@ export function createServer(options: ServerOptions) {
             response = invalidLoopIdResponse();
           } else {
             response = handleCancelSession(loopId);
+          }
+        }
+        // POST /api/sessions/:id/archive
+        else if (
+          path.match(/^\/api\/sessions\/[^/]+\/archive$/) &&
+          req.method === 'POST'
+        ) {
+          const parts = path.split('/');
+          const loopId = parts[parts.length - 2];
+          if (!validateLoopId(loopId)) {
+            response = invalidLoopIdResponse();
+          } else {
+            response = handleArchiveSession(loopId);
           }
         }
         // DELETE /api/sessions/:id

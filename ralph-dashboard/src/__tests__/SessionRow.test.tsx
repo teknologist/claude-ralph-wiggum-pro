@@ -22,6 +22,15 @@ vi.mock('../hooks/useDeleteSession', () => ({
   }),
 }));
 
+// Mock the useArchiveLoop hook
+const mockArchiveMutate = vi.fn();
+vi.mock('../hooks/useArchiveLoop', () => ({
+  useArchiveLoop: () => ({
+    mutate: mockArchiveMutate,
+    isPending: false,
+  }),
+}));
+
 function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -66,6 +75,7 @@ function renderRow(session: Session) {
 describe('SessionRow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockArchiveMutate.mockClear();
   });
 
   describe('rendering', () => {
@@ -512,6 +522,171 @@ describe('SessionRow', () => {
       expect(global.alert).toHaveBeenCalledWith(
         'Failed to delete: Delete failed'
       );
+    });
+  });
+
+  describe('archive functionality', () => {
+    it('shows archive modal when archive button is clicked for orphaned session', async () => {
+      renderRow(createMockSession({ status: 'orphaned' }));
+
+      // Expand row to see archive button
+      const row = screen.getByText('test-project').closest('tr');
+      fireEvent.click(row!);
+
+      // Click archive button
+      const archiveButton = screen.getByText('📦 Archive Orphaned Loop');
+      fireEvent.click(archiveButton);
+
+      // Modal should appear
+      await waitFor(() => {
+        expect(
+          screen.getByRole('heading', { name: /Archive Orphaned Loop/ })
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('closes modal when Keep as Orphaned is clicked', async () => {
+      renderRow(createMockSession({ status: 'orphaned' }));
+
+      // Expand and click archive
+      const row = screen.getByText('test-project').closest('tr');
+      fireEvent.click(row!);
+      fireEvent.click(screen.getByText('📦 Archive Orphaned Loop'));
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('heading', { name: /Archive Orphaned Loop/ })
+        ).toBeInTheDocument();
+      });
+
+      // Click Keep as Orphaned
+      fireEvent.click(screen.getByText('Keep as Orphaned'));
+
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('heading', { name: /Archive Orphaned Loop/ })
+        ).not.toBeInTheDocument();
+      });
+    });
+
+    it('calls mutate when confirming archive', async () => {
+      renderRow(
+        createMockSession({ loop_id: 'orphan-loop-123', status: 'orphaned' })
+      );
+
+      // Expand and click archive
+      const row = screen.getByText('test-project').closest('tr');
+      fireEvent.click(row!);
+      fireEvent.click(screen.getByText('📦 Archive Orphaned Loop'));
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('heading', { name: /Archive Orphaned Loop/ })
+        ).toBeInTheDocument();
+      });
+
+      // Find and click the confirm button (the one with bg-claude-coral class in the modal)
+      const dialog = screen.getByRole('alertdialog');
+      const confirmButton = dialog.querySelector(
+        'button.bg-claude-coral'
+      ) as HTMLButtonElement;
+      fireEvent.click(confirmButton);
+
+      expect(mockArchiveMutate).toHaveBeenCalledWith(
+        'orphan-loop-123',
+        expect.any(Object)
+      );
+    });
+
+    it('closes modal and row on successful archive', async () => {
+      // Mock mutate to call onSuccess
+      mockArchiveMutate.mockImplementation((_loopId, options) => {
+        options?.onSuccess?.();
+      });
+
+      renderRow(
+        createMockSession({ loop_id: 'orphan-loop-123', status: 'orphaned' })
+      );
+
+      // Expand and click archive
+      const row = screen.getByText('test-project').closest('tr');
+      fireEvent.click(row!);
+      fireEvent.click(screen.getByText('📦 Archive Orphaned Loop'));
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('heading', { name: /Archive Orphaned Loop/ })
+        ).toBeInTheDocument();
+      });
+
+      // Confirm archive
+      const dialog = screen.getByRole('alertdialog');
+      const confirmButton = dialog.querySelector(
+        'button.bg-claude-coral'
+      ) as HTMLButtonElement;
+      fireEvent.click(confirmButton);
+
+      // Modal should be closed
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('heading', { name: /Archive Orphaned Loop/ })
+        ).not.toBeInTheDocument();
+      });
+
+      // Row should be collapsed (Project Path is detail content)
+      expect(screen.queryByText('Project Path')).not.toBeInTheDocument();
+    });
+
+    it('shows alert on archive error', async () => {
+      // Mock alert
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      // Mock mutate to call onError
+      mockArchiveMutate.mockImplementation((_loopId, options) => {
+        options?.onError?.(new Error('Archive failed'));
+      });
+
+      renderRow(
+        createMockSession({ loop_id: 'orphan-loop-123', status: 'orphaned' })
+      );
+
+      // Expand and click archive
+      const row = screen.getByText('test-project').closest('tr');
+      fireEvent.click(row!);
+      fireEvent.click(screen.getByText('📦 Archive Orphaned Loop'));
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('heading', { name: /Archive Orphaned Loop/ })
+        ).toBeInTheDocument();
+      });
+
+      // Confirm archive
+      const dialog = screen.getByRole('alertdialog');
+      const confirmButton = dialog.querySelector(
+        'button.bg-claude-coral'
+      ) as HTMLButtonElement;
+      fireEvent.click(confirmButton);
+
+      // Alert should have been called
+      expect(alertSpy).toHaveBeenCalledWith(
+        'Failed to archive: Archive failed'
+      );
+
+      alertSpy.mockRestore();
+    });
+
+    it('does not show archive button for non-orphaned sessions', () => {
+      renderRow(createMockSession({ status: 'active' }));
+
+      // Expand row
+      const row = screen.getByText('test-project').closest('tr');
+      fireEvent.click(row!);
+
+      // Archive button should not be present
+      expect(
+        screen.queryByText('📦 Archive Orphaned Loop')
+      ).not.toBeInTheDocument();
     });
   });
 });

@@ -209,6 +209,13 @@ export function mergeSessions(entries: LogEntry[]): Session[] {
       status = 'active';
     }
 
+    // Detect orphaned sessions (marked active but state file doesn't exist)
+    if (status === 'active' && start.state_file_path) {
+      if (!existsSync(start.state_file_path)) {
+        status = 'orphaned';
+      }
+    }
+
     // For active sessions, read current iteration from state file
     let iterations: number | null = completion?.iterations ?? null;
     if (isActive && start.state_file_path) {

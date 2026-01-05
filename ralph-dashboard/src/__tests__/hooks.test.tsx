@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useSessions } from '../hooks/useSessions';
 import { useCancelLoop } from '../hooks/useCancelLoop';
 import { useDeleteSession } from '../hooks/useDeleteSession';
+import { useArchiveLoop } from '../hooks/useArchiveLoop';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import type { SessionsResponse } from '../../server/types';
 
@@ -276,6 +277,97 @@ describe('useDeleteSession', () => {
     vi.mocked(global.fetch).mockImplementation(() => new Promise(() => {}));
 
     const { result } = renderHook(() => useDeleteSession(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('test-1');
+
+    await waitFor(() => {
+      expect(result.current.isPending).toBe(true);
+    });
+  });
+});
+
+describe('useArchiveLoop', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('archives session successfully', async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        message: 'Successfully archived orphaned loop test-1',
+        loop_id: 'test-1',
+      }),
+    } as Response);
+
+    const { result } = renderHook(() => useArchiveLoop(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('test-1');
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/sessions/test-1/archive', {
+      method: 'POST',
+    });
+  });
+
+  it('handles archive error', async () => {
+    vi.mocked(global.fetch).mockRejectedValueOnce(new Error('Archive failed'));
+
+    const { result } = renderHook(() => useArchiveLoop(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('test-1');
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+
+    expect(result.current.error).toBeInstanceOf(Error);
+  });
+
+  it('handles HTTP error response', async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({
+        error: 'INVALID_STATE',
+        message: 'Cannot archive session: status is active, expected orphaned',
+      }),
+    } as Response);
+
+    const { result } = renderHook(() => useArchiveLoop(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('test-1');
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+  });
+
+  it('starts with isPending false', () => {
+    const { result } = renderHook(() => useArchiveLoop(), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.isPending).toBe(false);
+  });
+
+  it('sets isPending true during mutation', async () => {
+    // Never resolve to keep it pending
+    vi.mocked(global.fetch).mockImplementation(() => new Promise(() => {}));
+
+    const { result } = renderHook(() => useArchiveLoop(), {
       wrapper: createWrapper(),
     });
 

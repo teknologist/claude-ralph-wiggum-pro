@@ -4,6 +4,7 @@ import {
   fetchSession,
   cancelSession,
   deleteSession,
+  archiveSession,
 } from '../lib/api';
 import type { SessionsResponse, Session } from '../../server/types';
 
@@ -173,6 +174,59 @@ describe('API client', () => {
 
       await expect(deleteSession('nonexistent')).rejects.toThrow(
         'Session not found'
+      );
+    });
+  });
+
+  describe('archiveSession', () => {
+    it('should archive orphaned session successfully', async () => {
+      const mockResponse = {
+        success: true,
+        message: 'Successfully archived orphaned loop test-123',
+        loop_id: 'test-123',
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockResponse),
+      });
+
+      const result = await archiveSession('test-123');
+
+      expect(mockFetch).toHaveBeenCalledWith('/api/sessions/test-123/archive', {
+        method: 'POST',
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should throw error when trying to archive non-orphaned session', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () =>
+          Promise.resolve({
+            error: 'INVALID_STATE',
+            message:
+              "Cannot archive loop: status is 'active', expected 'orphaned'",
+          }),
+      });
+
+      await expect(archiveSession('test-123')).rejects.toThrow(
+        "Cannot archive loop: status is 'active', expected 'orphaned'"
+      );
+    });
+
+    it('should throw error when session not found', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () =>
+          Promise.resolve({
+            error: 'NOT_FOUND',
+            message: 'Loop not found: nonexistent',
+          }),
+      });
+
+      await expect(archiveSession('nonexistent')).rejects.toThrow(
+        'Loop not found: nonexistent'
       );
     });
   });

@@ -3,6 +3,7 @@ import type {
   SessionsResponse,
   CancelResponse,
   DeleteResponse,
+  ArchiveResponse,
   ErrorResponse,
 } from '../../server/types';
 
@@ -40,6 +41,17 @@ export async function cancelSession(loopId: string): Promise<CancelResponse> {
 export async function deleteSession(loopId: string): Promise<DeleteResponse> {
   const response = await fetch(`${API_BASE}/sessions/${loopId}`, {
     method: 'DELETE',
+  });
+  if (!response.ok) {
+    const error: ErrorResponse = await response.json();
+    throw new Error(error.message);
+  }
+  return response.json();
+}
+
+export async function archiveSession(loopId: string): Promise<ArchiveResponse> {
+  const response = await fetch(`${API_BASE}/sessions/${loopId}/archive`, {
+    method: 'POST',
   });
   if (!response.ok) {
     const error: ErrorResponse = await response.json();

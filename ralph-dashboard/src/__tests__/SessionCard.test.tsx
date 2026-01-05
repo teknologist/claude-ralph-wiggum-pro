@@ -8,6 +8,7 @@ import type { Session } from '../../server/types';
 // Mock the hooks
 const mockCancelMutate = vi.fn();
 const mockDeleteMutate = vi.fn();
+const mockArchiveMutate = vi.fn();
 
 vi.mock('../hooks/useCancelLoop', () => ({
   useCancelLoop: () => ({
@@ -19,6 +20,13 @@ vi.mock('../hooks/useCancelLoop', () => ({
 vi.mock('../hooks/useDeleteSession', () => ({
   useDeleteSession: () => ({
     mutate: mockDeleteMutate,
+    isPending: false,
+  }),
+}));
+
+vi.mock('../hooks/useArchiveLoop', () => ({
+  useArchiveLoop: () => ({
+    mutate: mockArchiveMutate,
     isPending: false,
   }),
 }));
@@ -451,6 +459,319 @@ describe('SessionCard', () => {
       // The default in the component is 100 for display, but truncation happens
       // via line-clamp-2 CSS class for the display
       expect(screen.getByText(task)).toBeInTheDocument();
+    });
+  });
+
+  describe('mutation callback handling', () => {
+    it('calls onSuccess callback after successful cancel', async () => {
+      // Mock the mutate to immediately call onSuccess
+      mockCancelMutate.mockImplementation((_loopId, options) => {
+        options?.onSuccess?.();
+      });
+
+      renderCard(createMockSession({ status: 'active' }));
+
+      // Expand card
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      await userEvent.click(card);
+
+      // Click cancel button in detail
+      const detailSection = document.getElementById('session-detail');
+      if (!detailSection) throw new Error('SessionDetail not found');
+      const cancelButton = within(detailSection).getByRole('button', {
+        name: /cancel loop/i,
+      });
+      await userEvent.click(cancelButton);
+
+      // Confirm cancellation
+      const allButtons = screen.getAllByText('Cancel Loop');
+      const confirmButton = allButtons.find(
+        (btn) => !detailSection.contains(btn)
+      );
+      if (!confirmButton) throw new Error('Confirm button not found');
+      await userEvent.click(confirmButton);
+
+      // After onSuccess, modal should be closed
+      expect(
+        screen.queryByText(/Are you sure you want to cancel/)
+      ).not.toBeInTheDocument();
+    });
+
+    it('calls onError callback after failed cancel', async () => {
+      const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      // Mock the mutate to immediately call onError
+      mockCancelMutate.mockImplementation((_loopId, options) => {
+        options?.onError?.(new Error('Cancel failed'));
+      });
+
+      renderCard(createMockSession({ status: 'active' }));
+
+      // Expand and open cancel modal
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      await userEvent.click(card);
+
+      const detailSection = document.getElementById('session-detail');
+      if (!detailSection) throw new Error('SessionDetail not found');
+      const cancelButton = within(detailSection).getByRole('button', {
+        name: /cancel loop/i,
+      });
+      await userEvent.click(cancelButton);
+
+      // Confirm cancellation
+      const allButtons = screen.getAllByText('Cancel Loop');
+      const confirmButton = allButtons.find(
+        (btn) => !detailSection.contains(btn)
+      );
+      if (!confirmButton) throw new Error('Confirm button not found');
+      await userEvent.click(confirmButton);
+
+      // Alert should have been called with error message
+      expect(alertMock).toHaveBeenCalledWith('Failed to cancel: Cancel failed');
+
+      alertMock.mockRestore();
+    });
+
+    it('calls onSuccess callback after successful delete', async () => {
+      // Mock the mutate to immediately call onSuccess
+      mockDeleteMutate.mockImplementation((_loopId, options) => {
+        options?.onSuccess?.();
+      });
+
+      renderCard(createMockSession({ status: 'success' }));
+
+      // Expand card
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      await userEvent.click(card);
+
+      // Click delete button in detail
+      const detailSection = document.getElementById('session-detail');
+      if (!detailSection) throw new Error('SessionDetail not found');
+      const deleteButton = within(detailSection).getByRole('button', {
+        name: /delete permanently/i,
+      });
+      await userEvent.click(deleteButton);
+
+      // Find and click the confirm button in the modal (rendered via portal)
+      // The modal confirm button is inside a dialog role
+      const dialog = screen.getByRole('alertdialog');
+      const confirmButton = within(dialog).getByRole('button', {
+        name: /Delete Permanently/,
+      });
+      await userEvent.click(confirmButton);
+
+      // After onSuccess, the modal heading should be gone (check for heading, not body text)
+      expect(
+        screen.queryByRole('heading', { name: /Delete Permanently/ })
+      ).not.toBeInTheDocument();
+    });
+
+    it('calls onError callback after failed delete', async () => {
+      const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      // Mock the mutate to immediately call onError
+      mockDeleteMutate.mockImplementation((_loopId, options) => {
+        options?.onError?.(new Error('Delete failed'));
+      });
+
+      renderCard(createMockSession({ status: 'success' }));
+
+      // Expand and open delete modal
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      await userEvent.click(card);
+
+      const detailSection = document.getElementById('session-detail');
+      if (!detailSection) throw new Error('SessionDetail not found');
+      const deleteButton = within(detailSection).getByRole('button', {
+        name: /delete permanently/i,
+      });
+      await userEvent.click(deleteButton);
+
+      // Find and click the confirm button in the modal
+      const dialog = screen.getByRole('alertdialog');
+      const confirmButton = within(dialog).getByRole('button', {
+        name: /Delete Permanently/,
+      });
+      await userEvent.click(confirmButton);
+
+      // Alert should have been called with error message
+      expect(alertMock).toHaveBeenCalledWith('Failed to delete: Delete failed');
+
+      alertMock.mockRestore();
+    });
+  });
+
+  describe('archive modal interactions', () => {
+    it('shows archive modal when archive button in detail is clicked', async () => {
+      renderCard(createMockSession({ status: 'orphaned' }));
+
+      // First expand the card
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      await userEvent.click(card);
+
+      // Click archive button in SessionDetail
+      const detailSection = document.getElementById('session-detail');
+      expect(detailSection).toBeInTheDocument();
+      if (!detailSection) throw new Error('SessionDetail not found');
+      const archiveButton = within(detailSection).getByRole('button', {
+        name: /archive orphaned loop/i,
+      });
+      await userEvent.click(archiveButton);
+
+      // Modal should appear (check for modal title specifically)
+      expect(
+        screen.getByRole('heading', { name: /Archive Orphaned Loop/ })
+      ).toBeInTheDocument();
+      expect(screen.getByText('Keep as Orphaned')).toBeInTheDocument();
+    });
+
+    it('calls archive mutation when confirm is clicked', async () => {
+      renderCard(createMockSession({ status: 'orphaned' }));
+
+      // Expand and click archive
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      await userEvent.click(card);
+
+      const detailSection = document.getElementById('session-detail');
+      if (!detailSection) throw new Error('SessionDetail not found');
+      const archiveButton = within(detailSection).getByRole('button', {
+        name: /archive orphaned loop/i,
+      });
+      await userEvent.click(archiveButton);
+
+      // Click confirm in modal
+      const allButtons = screen.getAllByText(/Archive Loop/);
+      const confirmButton = allButtons.find(
+        (btn) => !detailSection.contains(btn)
+      );
+      if (!confirmButton) throw new Error('Confirm button not found');
+      await userEvent.click(confirmButton);
+
+      expect(mockArchiveMutate).toHaveBeenCalledWith(
+        'test-loop-1',
+        expect.objectContaining({
+          onSuccess: expect.any(Function),
+        })
+      );
+    });
+
+    it('closes archive modal when cancelled', async () => {
+      renderCard(createMockSession({ status: 'orphaned' }));
+
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      await userEvent.click(card);
+
+      const detailSection = document.getElementById('session-detail');
+      if (!detailSection) throw new Error('SessionDetail not found');
+      const archiveButton = within(detailSection).getByRole('button', {
+        name: /archive orphaned loop/i,
+      });
+      await userEvent.click(archiveButton);
+
+      // Click cancel button in modal
+      const keepOrphanedButton = screen.getByText('Keep as Orphaned');
+      await userEvent.click(keepOrphanedButton);
+
+      // Modal should close (check for modal title specifically)
+      expect(
+        screen.queryByRole('heading', { name: /Archive Orphaned Loop/ })
+      ).not.toBeInTheDocument();
+    });
+
+    it('calls onSuccess callback after successful archive', async () => {
+      // Mock the mutate to immediately call onSuccess
+      mockArchiveMutate.mockImplementation((_loopId, options) => {
+        options?.onSuccess?.();
+      });
+
+      renderCard(createMockSession({ status: 'orphaned' }));
+
+      // Expand card
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      await userEvent.click(card);
+
+      // Click archive button in detail
+      const detailSection = document.getElementById('session-detail');
+      if (!detailSection) throw new Error('SessionDetail not found');
+      const archiveButton = within(detailSection).getByRole('button', {
+        name: /archive orphaned loop/i,
+      });
+      await userEvent.click(archiveButton);
+
+      // Confirm archive
+      const allButtons = screen.getAllByText(/Archive Loop/);
+      const confirmButton = allButtons.find(
+        (btn) => !detailSection.contains(btn)
+      );
+      if (!confirmButton) throw new Error('Confirm button not found');
+      await userEvent.click(confirmButton);
+
+      // After onSuccess, modal should be closed
+      expect(
+        screen.queryByText(/Archive Orphaned Loop/)
+      ).not.toBeInTheDocument();
+    });
+
+    it('calls onError callback after failed archive', async () => {
+      const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      // Mock the mutate to immediately call onError
+      mockArchiveMutate.mockImplementation((_loopId, options) => {
+        options?.onError?.(new Error('Archive failed'));
+      });
+
+      renderCard(createMockSession({ status: 'orphaned' }));
+
+      // Expand and open archive modal
+      const card = screen
+        .getByTestId('session-card')
+        .querySelector('[role="button"]') as HTMLElement;
+      await userEvent.click(card);
+
+      const detailSection = document.getElementById('session-detail');
+      if (!detailSection) throw new Error('SessionDetail not found');
+      const archiveButton = within(detailSection).getByRole('button', {
+        name: /archive orphaned loop/i,
+      });
+      await userEvent.click(archiveButton);
+
+      // Confirm archive
+      const allButtons = screen.getAllByText(/Archive Loop/);
+      const confirmButton = allButtons.find(
+        (btn) => !detailSection.contains(btn)
+      );
+      if (!confirmButton) throw new Error('Confirm button not found');
+      await userEvent.click(confirmButton);
+
+      // Alert should have been called with error message
+      expect(alertMock).toHaveBeenCalledWith(
+        'Failed to archive: Archive failed'
+      );
+
+      alertMock.mockRestore();
+    });
+  });
+
+  describe('orphaned status rendering', () => {
+    it('renders orphaned status badge', () => {
+      renderCard(createMockSession({ status: 'orphaned' }));
+      expect(screen.getByText('Orphaned')).toBeInTheDocument();
     });
   });
 });

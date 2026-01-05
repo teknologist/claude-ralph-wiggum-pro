@@ -44,6 +44,16 @@ export function StatusBadge({ status }: StatusBadgeProps) {
           ✗ Error
         </span>
       );
+    case 'orphaned':
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+          <span
+            className="w-2 h-2 rounded-full bg-amber-500"
+            aria-hidden="true"
+          />
+          Orphaned
+        </span>
+      );
     default:
       return (
         <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">

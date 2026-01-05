@@ -24,8 +24,13 @@ export function SessionTable({
   const isMobile = useMediaQuery(BREAKPOINTS.MOBILE);
 
   const { activeSessions, archivedSessions } = useMemo(() => {
-    const active = sessions.filter((s) => s.status === 'active');
-    const archived = sessions.filter((s) => s.status !== 'active');
+    // Include both active and orphaned sessions in the "active" tab
+    const active = sessions.filter(
+      (s) => s.status === 'active' || s.status === 'orphaned'
+    );
+    const archived = sessions.filter(
+      (s) => s.status !== 'active' && s.status !== 'orphaned'
+    );
 
     // Sort by started_at descending (most recent first)
     const sortByDate = (a: Session, b: Session) =>

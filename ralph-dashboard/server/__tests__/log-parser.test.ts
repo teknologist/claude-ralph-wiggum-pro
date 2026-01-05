@@ -20,7 +20,7 @@ describe('log-parser', () => {
       expect(result).toEqual([]);
     });
 
-    it('should create active session from start entry only', () => {
+    it('should create orphaned session from start entry when state file does not exist', () => {
       const startEntry: StartLogEntry = {
         loop_id: 'loop-test-123',
         session_id: 'test-123',
@@ -38,8 +38,33 @@ describe('log-parser', () => {
       const result = mergeSessions([startEntry]);
 
       expect(result).toHaveLength(1);
-      expect(result[0].status).toBe('active');
+      // State file doesn't exist, so session is marked as orphaned
+      expect(result[0].status).toBe('orphaned');
       expect(result[0].loop_id).toBe('loop-test-123');
+      expect(result[0].project_name).toBe('project');
+      expect(result[0].iterations).toBeNull();
+      expect(result[0].ended_at).toBeNull();
+    });
+
+    it('should create active session when state_file_path is not set', () => {
+      const startEntry: StartLogEntry = {
+        loop_id: 'loop-test-no-state',
+        session_id: 'test-no-state',
+        status: 'active',
+        project: '/Users/test/project',
+        project_name: 'project',
+        task: 'Test task',
+        started_at: new Date().toISOString(),
+        max_iterations: 10,
+        completion_promise: 'Complete the test',
+      };
+
+      const result = mergeSessions([startEntry]);
+
+      expect(result).toHaveLength(1);
+      // No state file path, so orphan detection is skipped
+      expect(result[0].status).toBe('active');
+      expect(result[0].loop_id).toBe('loop-test-no-state');
       expect(result[0].project_name).toBe('project');
       expect(result[0].iterations).toBeNull();
       expect(result[0].ended_at).toBeNull();
@@ -154,7 +179,6 @@ describe('log-parser', () => {
           status: 'active',
           project: '/test',
           project_name: 'test',
-          state_file_path: '/test/.claude/state',
           task: 'Task 1',
           started_at: '2024-01-15T09:00:00Z',
           max_iterations: 5,
@@ -170,12 +194,12 @@ describe('log-parser', () => {
           iterations: 5,
         } as CompletionLogEntry,
         {
+          // No state_file_path so orphan detection is skipped - remains active
           loop_id: 'loop-active-1',
           session_id: 'active-1',
           status: 'active',
           project: '/test2',
           project_name: 'test2',
-          state_file_path: '/test2/.claude/state',
           task: 'Active task',
           started_at: '2024-01-15T08:00:00Z',
           max_iterations: 10,
@@ -388,7 +412,6 @@ describe('log-parser', () => {
         status: 'active',
         project: '/test/project',
         project_name: 'test-project',
-        state_file_path: '/test/.claude/state.md',
         task: 'Original task',
         started_at: '2024-01-15T10:00:00Z',
         max_iterations: 20,
@@ -405,14 +428,13 @@ describe('log-parser', () => {
         iterations: 5,
       };
 
-      // Restarted loop gets a NEW unique loop_id
+      // Restarted loop gets a NEW unique loop_id (no state_file_path to avoid orphan detection)
       const secondStart: StartLogEntry = {
         loop_id: 'loop-second-uuid',
         session_id: 'same-session', // Same session
         status: 'active',
         project: '/test/project',
         project_name: 'test-project',
-        state_file_path: '/test/.claude/state.md',
         task: 'Restarted task',
         started_at: '2024-01-15T10:35:00Z',
         max_iterations: 20,
@@ -568,5 +590,22 @@ iteration: 5`;
       const result = deleteSession('non-existent-session-id');
       expect(result).toBe(false);
     });
+
+    // Note: The deleteSession function is already tested via integration
+    // with the actual LOG_FILE. More detailed tests would require either:
+    // 1. An environment variable to override LOG_FILE
+    // 2. Dependency injection
+    // 3. More complex mocking
+    //
+    // The remaining lines (299-317, 325-327) in deleteSession cover:
+    // - The for loop iterating through lines
+    // - JSON.parse of each line
+    // - Loop_id matching with fallback to session_id
+    // - Filtering out matched entries
+    // - Catch block for malformed JSON
+    // - Writing to temp file and atomic rename
+    //
+    // These code paths are exercised by the delete API endpoint e2e tests
+    // and the existing handleDeleteSession tests in delete-api.test.ts
   });
 });

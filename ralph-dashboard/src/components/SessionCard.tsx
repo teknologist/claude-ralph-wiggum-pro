@@ -6,6 +6,7 @@ import { ProgressBar } from './ProgressBar';
 import { StatusBadge } from './StatusBadge';
 import { useCancelLoop } from '../hooks/useCancelLoop';
 import { useDeleteSession } from '../hooks/useDeleteSession';
+import { useArchiveLoop } from '../hooks/useArchiveLoop';
 
 interface SessionCardProps {
   session: Session;
@@ -15,8 +16,10 @@ export function SessionCard({ session }: SessionCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
   const cancelMutation = useCancelLoop();
   const deleteMutation = useDeleteSession();
+  const archiveMutation = useArchiveLoop();
 
   const handleCancel = () => {
     setShowCancelModal(true);
@@ -75,6 +78,22 @@ export function SessionCard({ session }: SessionCardProps) {
       },
       onError: (error) => {
         alert(`Failed to delete: ${error.message}`);
+      },
+    });
+  };
+
+  const handleArchive = () => {
+    setShowArchiveModal(true);
+  };
+
+  const confirmArchive = () => {
+    archiveMutation.mutate(session.loop_id, {
+      onSuccess: () => {
+        setShowArchiveModal(false);
+        setIsExpanded(false);
+      },
+      onError: (error) => {
+        alert(`Failed to archive: ${error.message}`);
       },
     });
   };
@@ -157,6 +176,8 @@ export function SessionCard({ session }: SessionCardProps) {
             isCancelling={cancelMutation.isPending}
             onDelete={handleDelete}
             isDeleting={deleteMutation.isPending}
+            onArchive={handleArchive}
+            isArchiving={archiveMutation.isPending}
           />
         )}
       </div>
@@ -181,6 +202,16 @@ export function SessionCard({ session }: SessionCardProps) {
         onConfirm={confirmDelete}
         onCancel={() => setShowDeleteModal(false)}
         isLoading={deleteMutation.isPending}
+      />
+      <ConfirmModal
+        isOpen={showArchiveModal}
+        title="Archive Orphaned Loop?"
+        message={`This loop "${session.project_name}" is orphaned (no state file found). Archiving will mark it as completed and move it to the archived tab.`}
+        confirmLabel="Archive Loop"
+        cancelLabel="Keep as Orphaned"
+        onConfirm={confirmArchive}
+        onCancel={() => setShowArchiveModal(false)}
+        isLoading={archiveMutation.isPending}
       />
     </>
   );

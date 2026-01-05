@@ -511,5 +511,113 @@ describe('SessionDetail', () => {
         unmount();
       }
     });
+
+    it('does not show delete button for orphaned sessions', () => {
+      render(
+        <SessionDetail
+          session={createMockSession({ status: 'orphaned' })}
+          onCancel={mockOnCancel}
+          isCancelling={false}
+          onDelete={mockOnDelete}
+          isDeleting={false}
+        />
+      );
+      expect(
+        screen.queryByText('🗑 Delete Permanently')
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  describe('archive button features', () => {
+    const mockOnArchive = vi.fn();
+
+    beforeEach(() => {
+      mockOnArchive.mockClear();
+    });
+
+    it('shows archive button for orphaned sessions when onArchive provided', () => {
+      render(
+        <SessionDetail
+          session={createMockSession({ status: 'orphaned' })}
+          onCancel={mockOnCancel}
+          isCancelling={false}
+          onArchive={mockOnArchive}
+          isArchiving={false}
+        />
+      );
+      expect(screen.getByText('📦 Archive Orphaned Loop')).toBeInTheDocument();
+    });
+
+    it('does not show archive button for non-orphaned sessions', () => {
+      render(
+        <SessionDetail
+          session={createMockSession({ status: 'active' })}
+          onCancel={mockOnCancel}
+          isCancelling={false}
+          onArchive={mockOnArchive}
+          isArchiving={false}
+        />
+      );
+      expect(
+        screen.queryByText('📦 Archive Orphaned Loop')
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not show archive button when onArchive not provided', () => {
+      render(
+        <SessionDetail
+          session={createMockSession({ status: 'orphaned' })}
+          onCancel={mockOnCancel}
+          isCancelling={false}
+        />
+      );
+      expect(
+        screen.queryByText('📦 Archive Orphaned Loop')
+      ).not.toBeInTheDocument();
+    });
+
+    it('calls onArchive when archive button is clicked', () => {
+      render(
+        <SessionDetail
+          session={createMockSession({ status: 'orphaned' })}
+          onCancel={mockOnCancel}
+          isCancelling={false}
+          onArchive={mockOnArchive}
+          isArchiving={false}
+        />
+      );
+      fireEvent.click(screen.getByText('📦 Archive Orphaned Loop'));
+      expect(mockOnArchive).toHaveBeenCalledTimes(1);
+    });
+
+    it('disables archive button when isArchiving is true', () => {
+      render(
+        <SessionDetail
+          session={createMockSession({ status: 'orphaned' })}
+          onCancel={mockOnCancel}
+          isCancelling={false}
+          onArchive={mockOnArchive}
+          isArchiving={true}
+        />
+      );
+      const button = screen.getByText('Archiving...').closest('button');
+      expect(button).toBeDisabled();
+    });
+
+    it('shows loading spinner state when isArchiving is true', () => {
+      const { container } = render(
+        <SessionDetail
+          session={createMockSession({ status: 'orphaned' })}
+          onCancel={mockOnCancel}
+          isCancelling={false}
+          onArchive={mockOnArchive}
+          isArchiving={true}
+        />
+      );
+      expect(screen.getByText('Archiving...')).toBeInTheDocument();
+      // Check for the spinner SVG with animate-spin class
+      const spinner = container.querySelector('svg.animate-spin');
+      expect(spinner).toBeInTheDocument();
+    });
   });
 });

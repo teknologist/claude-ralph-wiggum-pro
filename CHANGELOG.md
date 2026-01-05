@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.18] - 2026-01-05
+
+### Added
+- **Stop-hook debug logging**: Comprehensive debug logging to `~/.claude/ralph-wiggum-pro-logs/debug.log` for diagnosing loop issues - logs session IDs, state file lookups, promise detection, and blocking decisions
+- **Dashboard archive API**: New `/api/sessions/archive` endpoint for managing archived sessions
+- **Dashboard archive hook**: `useArchiveLoop` React Query hook for archive operations
+
+### Changed
+- **Log session error handling**: `log_session()` function now logs errors to debug.log instead of silently suppressing them with `2>/dev/null || true`
+- **Dashboard tests**: Added comprehensive test coverage for SessionCard, SessionDetail, SessionRow, StatusBadge, and API hooks
+
 ## [2.0.17] - 2026-01-05
 
 ### Fixed

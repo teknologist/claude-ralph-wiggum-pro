@@ -5,7 +5,7 @@ export interface StartLogEntry {
   status: 'active';
   project: string;
   project_name: string;
-  state_file_path: string;
+  state_file_path?: string; // Optional for backward compat with old entries
   task: string;
   started_at: string;
   max_iterations: number;
@@ -16,7 +16,7 @@ export interface CompletionLogEntry {
   loop_id: string; // Unique per loop invocation
   session_id: string; // Claude Code terminal session (for grouping)
   status: 'completed';
-  outcome: 'success' | 'max_iterations' | 'cancelled' | 'error';
+  outcome: 'success' | 'max_iterations' | 'cancelled' | 'error' | 'orphaned';
   ended_at: string;
   duration_seconds: number;
   iterations: number;
@@ -29,11 +29,17 @@ export type LogEntry = StartLogEntry | CompletionLogEntry;
 export interface Session {
   loop_id: string; // Unique per loop invocation (primary identifier)
   session_id: string; // Claude Code terminal session (for grouping)
-  status: 'active' | 'success' | 'cancelled' | 'error' | 'max_iterations';
-  outcome?: 'success' | 'cancelled' | 'error' | 'max_iterations';
+  status:
+    | 'active'
+    | 'success'
+    | 'cancelled'
+    | 'error'
+    | 'max_iterations'
+    | 'orphaned';
+  outcome?: 'success' | 'cancelled' | 'error' | 'max_iterations' | 'orphaned';
   project: string;
   project_name: string;
-  state_file_path: string;
+  state_file_path?: string; // Optional for backward compat with old entries
   task: string;
   started_at: string;
   ended_at: string | null;
@@ -57,6 +63,12 @@ export interface CancelResponse {
 }
 
 export interface DeleteResponse {
+  success: boolean;
+  message: string;
+  loop_id: string;
+}
+
+export interface ArchiveResponse {
   success: boolean;
   message: string;
   loop_id: string;

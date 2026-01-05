@@ -10,11 +10,20 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# Log session helper function
+# Debug logging helper
+DEBUG_LOG="$HOME/.claude/ralph-wiggum-pro-logs/debug.log"
+debug_log() {
+  local msg="$1"
+  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] stop-hook: $msg" >> "$DEBUG_LOG"
+}
+
+# Log session helper function - logs errors instead of suppressing them
 log_session() {
   local outcome="$1"
   local error_reason="${2:-}"
-  "$PLUGIN_ROOT/scripts/log-session.sh" "$RALPH_STATE_FILE" "$outcome" "$error_reason" 2>/dev/null || true
+  if ! "$PLUGIN_ROOT/scripts/log-session.sh" "$RALPH_STATE_FILE" "$outcome" "$error_reason" 2>>"$DEBUG_LOG"; then
+    debug_log "log_session FAILED: outcome=$outcome file=$RALPH_STATE_FILE"
+  fi
 }
 
 # Read hook input from stdin (advanced stop hook API)
@@ -23,8 +32,15 @@ HOOK_INPUT=$(cat)
 # Extract session ID from hook input
 CURRENT_SESSION_ID=$(echo "$HOOK_INPUT" | jq -r '.session_id // empty')
 
+# Debug: Log session IDs and context
+debug_log "=== STOP HOOK INVOKED ==="
+debug_log "hook_input_session_id=$CURRENT_SESSION_ID"
+debug_log "CLAUDE_SESSION_ID_env=${CLAUDE_SESSION_ID:-not_set}"
+debug_log "cwd=$(pwd)"
+
 if [[ -z "$CURRENT_SESSION_ID" ]]; then
   # No session ID available - allow exit (shouldn't happen)
+  debug_log "EXIT: No session_id in hook input"
   exit 0
 fi
 
@@ -70,16 +86,20 @@ find_state_file_from_log() {
 # First try: Query log file for absolute path (works from any directory)
 RALPH_STATE_FILE=""
 RALPH_STATE_FILE=$(find_state_file_from_log "$CURRENT_SESSION_ID" || echo "")
+debug_log "find_state_file_from_log result: '${RALPH_STATE_FILE:-empty}'"
 
 # Fallback: Use relative glob (for backward compatibility)
 if [[ -z "$RALPH_STATE_FILE" ]]; then
+  debug_log "Trying fallback glob in .claude/"
   for STATE_FILE in .claude/ralph-loop.*.local.md; do
     [[ -f "$STATE_FILE" ]] || continue
     # Check if this state file belongs to current session
     # Using grep + sed for cross-platform compatibility (BSD/GNU)
     FILE_SESSION_ID=$(grep '^session_id:' "$STATE_FILE" 2>/dev/null | head -1 | sed 's/session_id: *"\{0,1\}\([^"]*\)"\{0,1\}.*/\1/' || echo "")
+    debug_log "Checking $STATE_FILE: file_session_id=$FILE_SESSION_ID vs current=$CURRENT_SESSION_ID"
     if [[ "$FILE_SESSION_ID" == "$CURRENT_SESSION_ID" ]]; then
       RALPH_STATE_FILE="$STATE_FILE"
+      debug_log "Matched! Using $STATE_FILE"
       break
     fi
   done
@@ -88,8 +108,13 @@ fi
 if [[ ! -f "$RALPH_STATE_FILE" ]]; then
   # No active loop for this session - allow exit
   # May happen if session was cancelled from dashboard or state file was manually deleted
+  debug_log "EXIT: No state file found for session_id=$CURRENT_SESSION_ID"
+  # List state files in .claude for debugging
+  debug_log "State files in .claude/: $(ls .claude/ralph-loop.*.local.md 2>/dev/null | tr '\n' ' ' || echo 'none')"
   exit 0
 fi
+
+debug_log "Using state file: $RALPH_STATE_FILE"
 
 # Parse markdown frontmatter (YAML between ---) and extract values
 FRONTMATTER=$(sed -n '/^---$/,/^---$/{ /^---$/d; p; }' "$RALPH_STATE_FILE")
@@ -224,9 +249,11 @@ if [[ "$COMPLETION_PROMISE" != "null" ]] && [[ -n "$COMPLETION_PROMISE" ]]; then
   # Use = for literal string comparison (not pattern matching)
   # == in [[ ]] does glob pattern matching which breaks with *, ?, [ characters
   if [[ -n "$PROMISE_TEXT" ]] && [[ "$PROMISE_TEXT" = "$COMPLETION_PROMISE" ]]; then
+    debug_log "SUCCESS: Promise detected! promise_text='$PROMISE_TEXT' expected='$COMPLETION_PROMISE'"
     echo "✅ Ralph loop: Detected <promise>$COMPLETION_PROMISE</promise>"
     log_session "success"
     rm "$RALPH_STATE_FILE"
+    debug_log "State file deleted: $RALPH_STATE_FILE"
     exit 0
   fi
 fi
@@ -310,6 +337,7 @@ fi
 
 # Output JSON to block the stop and feed prompt back
 # The "reason" field contains the prompt that will be sent back to Claude
+debug_log "BLOCKING: iteration=$NEXT_ITERATION near_miss=$NEAR_MISS"
 jq -n \
   --arg prompt "$PROMPT_TEXT" \
   --arg msg "$SYSTEM_MSG" \
@@ -320,4 +348,5 @@ jq -n \
   }'
 
 # Exit 0 for successful hook execution
+debug_log "Block JSON emitted, exiting"
 exit 0
