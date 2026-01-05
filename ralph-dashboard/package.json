@@ -1,6 +1,6 @@
 {
   "name": "ralph-dashboard",
-  "version": "2.0.15",
+  "version": "2.0.16",
   "description": "Web dashboard for Ralph Wiggum loops - view active and archived sessions",
   "type": "module",
   "bin": {
@@ -26,8 +26,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.60.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-swipeable": "^7.0.2"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@codecov/vite-plugin": "^1.9.1",

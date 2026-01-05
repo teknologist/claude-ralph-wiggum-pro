@@ -47,7 +47,7 @@ find_state_file_from_log() {
   # Use jq to extract state_file_path from the matching entry
   # Filter out empty lines first to prevent jq errors on malformed JSONL
   local state_path
-  state_path=$(grep -v '^[[:space:]]*$' "$log_file" | jq -rs --arg sid "$session_id" \
+  state_path=$( (grep -v '^[[:space:]]*$' "$log_file" || true) | jq -rs --arg sid "$session_id" \
     'map(select(.session_id == $sid and .state_file_path)) | .[].state_file_path' \
     | tail -n 1)
 
@@ -67,7 +67,7 @@ find_state_file_from_log() {
 # Find state file for THIS session
 # First try: Query log file for absolute path (works from any directory)
 RALPH_STATE_FILE=""
-RALPH_STATE_FILE=$(find_state_file_from_log "$CURRENT_SESSION_ID")
+RALPH_STATE_FILE=$(find_state_file_from_log "$CURRENT_SESSION_ID" || echo "")
 
 # Fallback: Use relative glob (for backward compatibility)
 if [[ -z "$RALPH_STATE_FILE" ]]; then
@@ -91,10 +91,10 @@ fi
 
 # Parse markdown frontmatter (YAML between ---) and extract values
 FRONTMATTER=$(sed -n '/^---$/,/^---$/{ /^---$/d; p; }' "$RALPH_STATE_FILE")
-ITERATION=$(echo "$FRONTMATTER" | grep '^iteration:' | sed 's/iteration: *//')
-MAX_ITERATIONS=$(echo "$FRONTMATTER" | grep '^max_iterations:' | sed 's/max_iterations: *//')
+ITERATION=$(echo "$FRONTMATTER" | grep '^iteration:' | sed 's/iteration: *//' || echo "")
+MAX_ITERATIONS=$(echo "$FRONTMATTER" | grep '^max_iterations:' | sed 's/max_iterations: *//' || echo "")
 # Extract completion_promise and strip surrounding quotes if present
-COMPLETION_PROMISE=$(echo "$FRONTMATTER" | grep '^completion_promise:' | sed 's/completion_promise: *//' | sed 's/^"\(.*\)"$/\1/')
+COMPLETION_PROMISE=$(echo "$FRONTMATTER" | grep '^completion_promise:' | sed 's/completion_promise: *//' | sed 's/^"\(.*\)"$/\1/' || echo "")
 # Strip any remaining literal quotes (handles edge cases from $ARGUMENTS expansion)
 COMPLETION_PROMISE="${COMPLETION_PROMISE#\"}"
 COMPLETION_PROMISE="${COMPLETION_PROMISE%\"}"
@@ -242,7 +242,7 @@ fi
 NEXT_ITERATION=$((ITERATION + 1))
 
 # Calculate elapsed time
-STARTED_AT=$(echo "$FRONTMATTER" | grep '^started_at:' | sed 's/started_at: *//' | sed 's/^"\(.*\)"$/\1/')
+STARTED_AT=$(echo "$FRONTMATTER" | grep '^started_at:' | sed 's/started_at: *//' | sed 's/^"\(.*\)"$/\1/' || echo "")
 ELAPSED_STR="unknown"
 if [[ -n "$STARTED_AT" ]]; then
   # Try macOS date format first, then Linux
