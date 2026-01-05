@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { Session } from '../../server/types';
 import { ProgressBar } from './ProgressBar';
+import { TranscriptTimeline } from './TranscriptTimeline';
+import { ErrorBoundary } from './ErrorBoundary';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { BREAKPOINTS } from '../constants/breakpoints';
 
@@ -320,8 +322,24 @@ export function SessionDetail({
                 <>🗑 Delete Permanently</>
               )}
             </button>
+
+            {/* Transcript Timeline - nested as a subsection */}
+            <div className="mt-6 sm:mt-8">
+              <ErrorBoundary>
+                <TranscriptTimeline session={session} />
+              </ErrorBoundary>
+            </div>
           </div>
         )}
+
+      {/* Transcript Timeline (for active/orphaned sessions) */}
+      {(session.status === 'active' || session.status === 'orphaned') && (
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
+          <ErrorBoundary>
+            <TranscriptTimeline session={session} />
+          </ErrorBoundary>
+        </div>
+      )}
     </div>
   );
 }

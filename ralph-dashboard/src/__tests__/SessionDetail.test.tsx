@@ -1,7 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionDetail } from '../components/SessionDetail';
 import type { Session } from '../../server/types';
+import React from 'react';
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+    },
+  });
+  return ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+}
 
 const createMockSession = (overrides: Partial<Session> = {}): Session => ({
   loop_id: 'test-loop-1',
@@ -35,7 +48,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ task: 'My important task' })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // Task is in collapsible section now
       fireEvent.click(screen.getByText('Show details'));
@@ -48,7 +62,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ task: '' })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // Task is in collapsible section now
       fireEvent.click(screen.getByText('Show details'));
@@ -61,7 +76,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ completion_promise: 'DONE' })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // Completion promise is in collapsible section now
       fireEvent.click(screen.getByText('Show details'));
@@ -74,7 +90,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ completion_promise: null })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // Completion promise is in collapsible section now
       fireEvent.click(screen.getByText('Show details'));
@@ -87,7 +104,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ project: '/home/user/my-project' })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // Click "Show details" first since project path is in collapsible section
       fireEvent.click(screen.getByText('Show details'));
@@ -100,9 +118,15 @@ describe('SessionDetail', () => {
           session={createMockSession({ iterations: 7, max_iterations: 20 })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
-      expect(screen.getByText('7 / 20 iterations')).toBeInTheDocument();
+      // Iterations label and value are now in a progress bar with formatted text
+      expect(screen.getByText('Iterations')).toBeInTheDocument();
+      // Use getAllByText since '20' appears in multiple places (progress bar and percentage)
+      expect(screen.getAllByText(/20/).length).toBeGreaterThan(0);
+      // The specific iteration count '7' should also appear
+      expect(screen.getAllByText(/7/).length).toBeGreaterThan(0);
     });
 
     it('shows N/A for null iterations', () => {
@@ -111,7 +135,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ iterations: null })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText('N/A')).toBeInTheDocument();
     });
@@ -122,9 +147,13 @@ describe('SessionDetail', () => {
           session={createMockSession({ iterations: 0, max_iterations: 10 })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
-      expect(screen.getByText('0 / 10 iterations')).toBeInTheDocument();
+      // Iterations label and values are now in a progress bar
+      expect(screen.getByText('Iterations')).toBeInTheDocument();
+      // Use regex to match - 0 appears in both the percentage and the count
+      expect(screen.getByText(/0 \/ 10/)).toBeInTheDocument();
     });
 
     it('renders loop_id', () => {
@@ -133,7 +162,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ loop_id: 'abc-123-def-456' })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // Loop ID is in collapsible section now
       fireEvent.click(screen.getByText('Show details'));
@@ -147,7 +177,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ session_id: 'session-xyz-789' })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // Session ID is in collapsible section now
       fireEvent.click(screen.getByText('Show details'));
@@ -164,7 +195,8 @@ describe('SessionDetail', () => {
           })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // IDs are in collapsible section now
       fireEvent.click(screen.getByText('Show details'));
@@ -186,7 +218,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ duration_seconds: 45 })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText('45s')).toBeInTheDocument();
     });
@@ -197,7 +230,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ duration_seconds: 185 })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText('3m 5s')).toBeInTheDocument();
     });
@@ -208,7 +242,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ duration_seconds: 3660 })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText('1h 1m')).toBeInTheDocument();
     });
@@ -221,7 +256,8 @@ describe('SessionDetail', () => {
           })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText('In progress...')).toBeInTheDocument();
     });
@@ -237,7 +273,8 @@ describe('SessionDetail', () => {
           })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // State file path is in collapsible section now
       fireEvent.click(screen.getByText('Show details'));
@@ -253,7 +290,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ status: 'active' })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText('⏹ Cancel Loop')).toBeInTheDocument();
     });
@@ -264,7 +302,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ status: 'success' })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.queryByText('⏹ Cancel Loop')).not.toBeInTheDocument();
     });
@@ -275,7 +314,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ status: 'success' })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.queryByText('State File')).not.toBeInTheDocument();
     });
@@ -286,7 +326,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ status: 'active' })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       fireEvent.click(screen.getByText('⏹ Cancel Loop'));
       expect(mockOnCancel).toHaveBeenCalledTimes(1);
@@ -298,7 +339,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ status: 'active' })}
           onCancel={mockOnCancel}
           isCancelling={true}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       const button = screen.getByText('Cancelling...').closest('button');
       expect(button).toBeDisabled();
@@ -310,7 +352,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ status: 'active' })}
           onCancel={mockOnCancel}
           isCancelling={true}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText('Cancelling...')).toBeInTheDocument();
     });
@@ -326,7 +369,8 @@ describe('SessionDetail', () => {
           })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // Error reason is in collapsible section now
       fireEvent.click(screen.getByText('Show details'));
@@ -340,7 +384,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ error_reason: null })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       const errorLabels = screen.queryAllByText('Error');
       // Should not have the Error label in detail section
@@ -355,7 +400,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ status: 'active' })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // Click "Show details" to reveal collapsible section labels
       fireEvent.click(screen.getByText('Show details'));
@@ -376,7 +422,8 @@ describe('SessionDetail', () => {
           })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // Click "Show details" to reveal collapsible section labels
       fireEvent.click(screen.getByText('Show details'));
@@ -392,7 +439,8 @@ describe('SessionDetail', () => {
           })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // Click "Show details" to reveal collapsible section labels
       fireEvent.click(screen.getByText('Show details'));
@@ -415,7 +463,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
           onDelete={mockOnDelete}
           isDeleting={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText('🗑 Delete Permanently')).toBeInTheDocument();
     });
@@ -428,7 +477,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
           onDelete={mockOnDelete}
           isDeleting={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.queryByText('🗑 Delete Permanently')
@@ -441,7 +491,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ status: 'success' })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.queryByText('🗑 Delete Permanently')
@@ -456,7 +507,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
           onDelete={mockOnDelete}
           isDeleting={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       fireEvent.click(screen.getByText('🗑 Delete Permanently'));
       expect(mockOnDelete).toHaveBeenCalledTimes(1);
@@ -470,7 +522,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
           onDelete={mockOnDelete}
           isDeleting={true}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       const button = screen.getByText('Deleting...').closest('button');
       expect(button).toBeDisabled();
@@ -484,7 +537,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
           onDelete={mockOnDelete}
           isDeleting={true}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText('Deleting...')).toBeInTheDocument();
     });
@@ -505,7 +559,8 @@ describe('SessionDetail', () => {
             isCancelling={false}
             onDelete={mockOnDelete}
             isDeleting={false}
-          />
+          />,
+          { wrapper: createWrapper() }
         );
         expect(screen.getByText('🗑 Delete Permanently')).toBeInTheDocument();
         unmount();
@@ -520,7 +575,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
           onDelete={mockOnDelete}
           isDeleting={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.queryByText('🗑 Delete Permanently')
@@ -543,7 +599,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
           onArchive={mockOnArchive}
           isArchiving={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText('📦 Archive Orphaned Loop')).toBeInTheDocument();
     });
@@ -556,7 +613,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
           onArchive={mockOnArchive}
           isArchiving={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.queryByText('📦 Archive Orphaned Loop')
@@ -569,7 +627,8 @@ describe('SessionDetail', () => {
           session={createMockSession({ status: 'orphaned' })}
           onCancel={mockOnCancel}
           isCancelling={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.queryByText('📦 Archive Orphaned Loop')
@@ -584,7 +643,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
           onArchive={mockOnArchive}
           isArchiving={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       fireEvent.click(screen.getByText('📦 Archive Orphaned Loop'));
       expect(mockOnArchive).toHaveBeenCalledTimes(1);
@@ -598,7 +658,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
           onArchive={mockOnArchive}
           isArchiving={true}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       const button = screen.getByText('Archiving...').closest('button');
       expect(button).toBeDisabled();
@@ -612,7 +673,8 @@ describe('SessionDetail', () => {
           isCancelling={false}
           onArchive={mockOnArchive}
           isArchiving={true}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText('Archiving...')).toBeInTheDocument();
       // Check for the spinner SVG with animate-spin class

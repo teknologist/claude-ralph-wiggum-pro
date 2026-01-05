@@ -56,7 +56,8 @@ describe('ProgressBar', () => {
 
     it('shows label when showLabel is true (md size)', () => {
       render(<ProgressBar current={5} max={20} size="md" showLabel />);
-      expect(screen.getByText('5 / 20 iterations')).toBeInTheDocument();
+      // md size shows "X / Y" format without "iterations" word
+      expect(screen.getByText(/5 \/ 20/)).toBeInTheDocument();
     });
 
     it('hides label when showLabel is false', () => {

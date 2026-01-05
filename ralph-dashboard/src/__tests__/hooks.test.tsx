@@ -7,7 +7,17 @@ import { useCancelLoop } from '../hooks/useCancelLoop';
 import { useDeleteSession } from '../hooks/useDeleteSession';
 import { useArchiveLoop } from '../hooks/useArchiveLoop';
 import { useMediaQuery } from '../hooks/useMediaQuery';
-import type { SessionsResponse } from '../../server/types';
+import {
+  useTranscriptIterations,
+  useFullTranscript,
+  useTranscriptAvailability,
+} from '../hooks/useTranscript';
+import type {
+  SessionsResponse,
+  IterationsResponse,
+  FullTranscriptResponse,
+  TranscriptAvailabilityResponse,
+} from '../../server/types';
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -469,5 +479,190 @@ describe('useMediaQuery', () => {
 
     expect(result.current).toBe(true);
     expect(mockMatchMedia).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('useTranscriptIterations', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('does not fetch when disabled', async () => {
+    const { result } = renderHook(
+      () => useTranscriptIterations('loop-123', false),
+      { wrapper: createWrapper() }
+    );
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.data).toBeUndefined();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('fetches iterations when enabled', async () => {
+    const mockResponse: IterationsResponse = {
+      iterations: [
+        { iteration: 1, timestamp: '2024-01-15T10:00:00Z', output: 'First' },
+        { iteration: 2, timestamp: '2024-01-15T10:30:00Z', output: 'Second' },
+      ],
+    };
+
+    vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response);
+
+    const { result } = renderHook(
+      () => useTranscriptIterations('loop-123', true),
+      { wrapper: createWrapper() }
+    );
+
+    // Wait for the query to complete
+    await waitFor(
+      () => {
+        expect(result.current.isSuccess).toBe(true);
+      },
+      { timeout: 3000 }
+    );
+
+    expect(result.current.data).toEqual(mockResponse);
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/transcript/loop-123/iterations'
+    );
+  });
+
+  it('handles fetch error', async () => {
+    // Mock fetch to reject (network error or thrown error from API function)
+    // Use mockImplementation to ensure all retries also fail
+    vi.mocked(global.fetch).mockImplementation(() =>
+      Promise.reject(new Error('Not found'))
+    );
+
+    const { result } = renderHook(
+      () => useTranscriptIterations('loop-123', true),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(
+      () => {
+        expect(result.current.isError).toBe(true);
+      },
+      { timeout: 5000 }
+    );
+  });
+});
+
+describe('useFullTranscript', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('does not fetch when disabled', async () => {
+    const { result } = renderHook(() => useFullTranscript('loop-123', false), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.data).toBeUndefined();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('fetches full transcript when enabled', async () => {
+    const mockResponse: FullTranscriptResponse = {
+      messages: [
+        { role: 'user', content: 'Hello' },
+        { role: 'assistant', content: 'Hi there!' },
+      ],
+    };
+
+    vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response);
+
+    const { result } = renderHook(() => useFullTranscript('loop-123', true), {
+      wrapper: createWrapper(),
+    });
+
+    // Wait for the query to complete
+    await waitFor(
+      () => {
+        expect(result.current.isSuccess).toBe(true);
+      },
+      { timeout: 3000 }
+    );
+
+    expect(result.current.data).toEqual(mockResponse);
+    expect(global.fetch).toHaveBeenCalledWith('/api/transcript/loop-123/full');
+  });
+
+  it('handles fetch error', async () => {
+    // Mock fetch to reject (network error or thrown error from API function)
+    // Use mockImplementation to ensure all retries also fail
+    vi.mocked(global.fetch).mockImplementation(() =>
+      Promise.reject(new Error('Not found'))
+    );
+
+    const { result } = renderHook(() => useFullTranscript('loop-123', true), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(
+      () => {
+        expect(result.current.isError).toBe(true);
+      },
+      { timeout: 5000 }
+    );
+  });
+});
+
+describe('useTranscriptAvailability', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('fetches availability status', async () => {
+    const mockResponse: TranscriptAvailabilityResponse = {
+      hasIterations: true,
+      hasFullTranscript: true,
+    };
+
+    vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response);
+
+    const { result } = renderHook(() => useTranscriptAvailability('loop-123'), {
+      wrapper: createWrapper(),
+    });
+
+    // Wait for the query to complete
+    await waitFor(
+      () => {
+        expect(result.current.isSuccess).toBe(true);
+      },
+      { timeout: 3000 }
+    );
+
+    expect(result.current.data).toEqual(mockResponse);
+    expect(global.fetch).toHaveBeenCalledWith('/api/transcript/loop-123');
+  });
+
+  it('handles fetch error', async () => {
+    // Mock fetch to reject (network error or thrown error from API function)
+    // Use mockImplementation to ensure all retries also fail
+    vi.mocked(global.fetch).mockImplementation(() =>
+      Promise.reject(new Error('Check failed'))
+    );
+
+    const { result } = renderHook(() => useTranscriptAvailability('loop-123'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(
+      () => {
+        expect(result.current.isError).toBe(true);
+      },
+      { timeout: 5000 }
+    );
   });
 });

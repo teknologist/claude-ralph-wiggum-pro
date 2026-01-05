@@ -7,3 +7,6 @@ export { SessionCard } from './SessionCard';
 export { SessionDetail } from './SessionDetail';
 export { ConfirmModal } from './ConfirmModal';
 export { ProgressBar } from './ProgressBar';
+export { ErrorBoundary } from './ErrorBoundary';
+export { TranscriptTimeline } from './TranscriptTimeline';
+export { FullTranscriptModal } from './FullTranscriptModal';

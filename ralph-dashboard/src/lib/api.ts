@@ -5,6 +5,9 @@ import type {
   DeleteResponse,
   ArchiveResponse,
   ErrorResponse,
+  IterationsResponse,
+  FullTranscriptResponse,
+  TranscriptAvailabilityResponse,
 } from '../../server/types';
 
 const API_BASE = '/api';
@@ -53,6 +56,39 @@ export async function archiveSession(loopId: string): Promise<ArchiveResponse> {
   const response = await fetch(`${API_BASE}/sessions/${loopId}/archive`, {
     method: 'POST',
   });
+  if (!response.ok) {
+    const error: ErrorResponse = await response.json();
+    throw new Error(error.message);
+  }
+  return response.json();
+}
+
+export async function fetchTranscriptIterations(
+  loopId: string
+): Promise<IterationsResponse> {
+  const response = await fetch(`${API_BASE}/transcript/${loopId}/iterations`);
+  if (!response.ok) {
+    const error: ErrorResponse = await response.json();
+    throw new Error(error.message);
+  }
+  return response.json();
+}
+
+export async function fetchFullTranscript(
+  loopId: string
+): Promise<FullTranscriptResponse> {
+  const response = await fetch(`${API_BASE}/transcript/${loopId}/full`);
+  if (!response.ok) {
+    const error: ErrorResponse = await response.json();
+    throw new Error(error.message);
+  }
+  return response.json();
+}
+
+export async function checkTranscriptAvailability(
+  loopId: string
+): Promise<TranscriptAvailabilityResponse> {
+  const response = await fetch(`${API_BASE}/transcript/${loopId}`);
   if (!response.ok) {
     const error: ErrorResponse = await response.json();
     throw new Error(error.message);

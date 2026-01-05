@@ -4,6 +4,11 @@ import { handleGetSessions, handleGetSession } from './api/sessions';
 import { handleCancelSession } from './api/cancel';
 import { handleDeleteSession } from './api/delete';
 import { handleArchiveSession } from './api/archive';
+import {
+  handleGetIterations,
+  handleGetFullTranscript,
+  handleCheckTranscriptAvailability,
+} from './api/transcript';
 
 interface ServerOptions {
   port: number;
@@ -161,6 +166,44 @@ export function createServer(options: ServerOptions) {
             response = invalidLoopIdResponse();
           } else {
             response = handleDeleteSession(loopId);
+          }
+        }
+        // GET /api/transcript/:loopId/iterations
+        else if (
+          path.match(/^\/api\/transcript\/[^/]+\/iterations$/) &&
+          req.method === 'GET'
+        ) {
+          const parts = path.split('/');
+          const loopId = parts[parts.length - 2];
+          if (!validateLoopId(loopId)) {
+            response = invalidLoopIdResponse();
+          } else {
+            response = handleGetIterations(loopId);
+          }
+        }
+        // GET /api/transcript/:loopId/full
+        else if (
+          path.match(/^\/api\/transcript\/[^/]+\/full$/) &&
+          req.method === 'GET'
+        ) {
+          const parts = path.split('/');
+          const loopId = parts[parts.length - 2];
+          if (!validateLoopId(loopId)) {
+            response = invalidLoopIdResponse();
+          } else {
+            response = handleGetFullTranscript(loopId);
+          }
+        }
+        // GET /api/transcript/:loopId (check availability)
+        else if (
+          path.match(/^\/api\/transcript\/[^/]+$/) &&
+          req.method === 'GET'
+        ) {
+          const loopId = path.split('/').pop()!;
+          if (!validateLoopId(loopId)) {
+            response = invalidLoopIdResponse();
+          } else {
+            response = handleCheckTranscriptAvailability(loopId);
           }
         }
         // 404 for unknown API routes

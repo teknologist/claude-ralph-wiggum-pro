@@ -78,3 +78,28 @@ export interface ErrorResponse {
   error: string;
   message: string;
 }
+
+// Transcript types
+export interface IterationEntry {
+  iteration: number;
+  timestamp: string;
+  output: string;
+}
+
+export interface TranscriptMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface IterationsResponse {
+  iterations: IterationEntry[];
+}
+
+export interface FullTranscriptResponse {
+  messages: TranscriptMessage[];
+}
+
+export interface TranscriptAvailabilityResponse {
+  hasIterations: boolean;
+  hasFullTranscript: boolean;
+}

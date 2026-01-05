@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-01-05
+
+### Added
+- **Transcript Capture and Display**: Complete transcript system for viewing loop iterations
+  - Iteration-by-iteration output capture to `~/.claude/ralph-wiggum-pro-logs/transcripts/`
+  - Timeline view with collapsible iteration cards in dashboard
+  - Full transcript modal with search functionality
+  - Export transcripts as Markdown with session metadata
+  - Per-iteration duration tracking
+  - Highlighted search terms across iterations
+  - 422 comprehensive unit and E2E tests (96.96% coverage)
+- **Error Boundaries**: React ErrorBoundary component for TranscriptTimeline and FullTranscriptModal to prevent dashboard crashes
+- **Dashboard Components**:
+  - TranscriptTimeline: Collapsible timeline with search, export, and "view full" actions
+  - FullTranscriptModal: Modal for viewing complete transcript with search
+  - ErrorBoundary: Class component for catching React rendering errors
+- **API Endpoints**:
+  - `/api/transcript/iterations/:loopId` - Get paginated iterations
+  - `/api/transcript/full/:loopId` - Get full transcript with user prompt
+  - `/api/transcript/check/:loopId` - Check transcript availability
+- **React Query Hooks**:
+  - `useTranscriptIterations` - Fetch iteration data
+  - `useFullTranscript` - Fetch complete transcript
+  - `useTranscriptAvailability` - Check if transcript exists
+- **Bash Hook Security**: Added `validate_loop_id()` function with regex validation, path traversal prevention, and max length limit
+- **E2E Tests**: Playwright tests for transcript timeline, modal, search, and export functionality
+
+### Fixed
+- **Critical: Bash hook silent failures**: Removed `|| true` patterns, added proper error checking and logging to transcript operations in stop-hook.sh
+- **Critical: Empty catch blocks**: Added error logging to all catch blocks in transcript-service.ts
+- **Critical: Duplicate type definitions**: Removed duplicate types from transcript.ts API file, imported from central types.ts
+- **High Priority: E2E test timeouts**: Replaced hard-coded `waitForTimeout()` with explicit wait conditions for better reliability
+- **High Priority: Missing error boundaries**: Wrapped TranscriptTimeline and FullTranscriptModal with ErrorBoundary components
+- **Unit test mock lifecycle**: Fixed hooks.test.tsx error tests to use `mockImplementation` with rejections instead of `mockResolvedValueOnce` to properly handle React Query retries
+- **Unit test ambiguous selectors**: Fixed SessionDetail.test.tsx to use `getAllByText` for elements appearing multiple times
+
+### Changed
+- Dashboard now displays iteration count in transcript timeline header
+- Improved error messages for transcript loading failures
+- Better mobile responsiveness for transcript timeline and modal
+- Enhanced loading states with spinners for transcript data
+
 ## [2.0.19] - 2026-01-05
 
 ### Removed

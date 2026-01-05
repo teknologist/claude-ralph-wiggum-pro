@@ -26,6 +26,84 @@ log_session() {
   fi
 }
 
+# Transcript directory for storing iteration logs and full transcripts
+TRANSCRIPT_DIR="$HOME/.claude/ralph-wiggum-pro-logs/transcripts"
+
+# Validate loop_id format (alphanumeric, dots, dashes, underscores only - prevents path traversal)
+validate_loop_id() {
+  local loop_id="$1"
+  # Only allow safe characters: letters, numbers, dots, dashes, underscores
+  # Max length of 256 characters to prevent abuse
+  if [[ -z "$loop_id" ]]; then
+    debug_log "ERROR: loop_id is empty"
+    return 1
+  fi
+  if [[ ! "$loop_id" =~ ^[a-zA-Z0-9._-]{1,256}$ ]]; then
+    debug_log "ERROR: Invalid loop_id format (contains unsafe characters or too long): $loop_id"
+    return 1
+  fi
+  # Prevent path traversal with ..
+  if [[ "$loop_id" == *".."* ]]; then
+    debug_log "ERROR: loop_id contains path traversal sequence: $loop_id"
+    return 1
+  fi
+  return 0
+}
+
+# Log iteration to transcript file
+log_iteration() {
+  local loop_id="$1"
+  local iteration="$2"
+  local output="$3"
+
+  # Validate loop_id before use
+  if ! validate_loop_id "$loop_id"; then
+    debug_log "ERROR: Skipping iteration log due to invalid loop_id"
+    return 1
+  fi
+
+  mkdir -p "$TRANSCRIPT_DIR"
+
+  local iterations_file="$TRANSCRIPT_DIR/${loop_id}-iterations.jsonl"
+  if ! jq -n -c \
+    --argjson iteration "$iteration" \
+    --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --arg output "$output" \
+    '{iteration: $iteration, timestamp: $timestamp, output: $output}' \
+    >> "$iterations_file" 2>>"$DEBUG_LOG"; then
+    debug_log "ERROR: Failed to log iteration $iteration for loop $loop_id to $iterations_file"
+    return 1
+  fi
+  return 0
+}
+
+# Copy full transcript on completion
+copy_full_transcript() {
+  local loop_id="$1"
+  local transcript_path="$2"
+
+  # Validate loop_id before use
+  if ! validate_loop_id "$loop_id"; then
+    debug_log "ERROR: Skipping transcript copy due to invalid loop_id"
+    return 1
+  fi
+
+  mkdir -p "$TRANSCRIPT_DIR"
+
+  if [[ -f "$transcript_path" ]]; then
+    local target_file="$TRANSCRIPT_DIR/${loop_id}-full.jsonl"
+    if ! cp "$transcript_path" "$target_file" 2>>"$DEBUG_LOG"; then
+      debug_log "ERROR: Failed to copy full transcript to $target_file"
+      return 1
+    fi
+    debug_log "Copied full transcript to $target_file"
+  else
+    debug_log "WARNING: Transcript file not found: $transcript_path"
+    return 1
+  fi
+  return 0
+}
+
 # Read hook input from stdin (advanced stop hook API)
 HOOK_INPUT=$(cat)
 
@@ -130,6 +208,10 @@ COMPLETION_PROMISE="${COMPLETION_PROMISE%\"}"
 COMPLETION_PROMISE="${COMPLETION_PROMISE#\'}"
 COMPLETION_PROMISE="${COMPLETION_PROMISE%\'}"
 
+# Extract loop_id for transcript logging
+LOOP_ID=$(echo "$FRONTMATTER" | grep '^loop_id:' | sed 's/loop_id: *//' | sed 's/^"\(.*\)"$/\1/' || echo "")
+debug_log "loop_id=$LOOP_ID"
+
 # Validate numeric fields before arithmetic operations
 if [[ ! "$ITERATION" =~ ^[0-9]+$ ]]; then
   echo "⚠️  Ralph loop: State file corrupted" >&2
@@ -155,16 +237,18 @@ if [[ ! "$MAX_ITERATIONS" =~ ^[0-9]+$ ]]; then
   exit 0
 fi
 
+# Get transcript path from hook input (needed for max iterations check and later)
+TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | jq -r '.transcript_path')
+
 # Check if max iterations reached
 if [[ $MAX_ITERATIONS -gt 0 ]] && [[ $ITERATION -ge $MAX_ITERATIONS ]]; then
   echo "🛑 Ralph loop: Max iterations ($MAX_ITERATIONS) reached."
   log_session "max_iterations"
+  # Copy full transcript before removing state file
+  [[ -n "$LOOP_ID" ]] && copy_full_transcript "$LOOP_ID" "$TRANSCRIPT_PATH"
   rm "$RALPH_STATE_FILE"
   exit 0
 fi
-
-# Get transcript path from hook input
-TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | jq -r '.transcript_path')
 
 if [[ ! -f "$TRANSCRIPT_PATH" ]]; then
   echo "⚠️  Ralph loop: Transcript file not found" >&2
@@ -251,7 +335,11 @@ if [[ "$COMPLETION_PROMISE" != "null" ]] && [[ -n "$COMPLETION_PROMISE" ]]; then
   if [[ -n "$PROMISE_TEXT" ]] && [[ "$PROMISE_TEXT" = "$COMPLETION_PROMISE" ]]; then
     debug_log "SUCCESS: Promise detected! promise_text='$PROMISE_TEXT' expected='$COMPLETION_PROMISE'"
     echo "✅ Ralph loop: Detected <promise>$COMPLETION_PROMISE</promise>"
+    # Log final iteration before success
+    [[ -n "$LOOP_ID" ]] && log_iteration "$LOOP_ID" "$ITERATION" "$LAST_OUTPUT"
     log_session "success"
+    # Copy full transcript before removing state file
+    [[ -n "$LOOP_ID" ]] && copy_full_transcript "$LOOP_ID" "$TRANSCRIPT_PATH"
     rm "$RALPH_STATE_FILE"
     debug_log "State file deleted: $RALPH_STATE_FILE"
     exit 0
@@ -316,6 +404,9 @@ if [[ "$COMPLETION_PROMISE" != "null" ]] && [[ -n "$COMPLETION_PROMISE" ]]; then
 else
   SYSTEM_MSG="🔄 Ralph iteration $NEXT_ITERATION | Running for $ELAPSED_STR | No completion promise - runs until max iterations"
 fi
+
+# Log this iteration's output before continuing
+[[ -n "$LOOP_ID" ]] && log_iteration "$LOOP_ID" "$ITERATION" "$LAST_OUTPUT"
 
 # Output JSON to block the stop and feed prompt back
 # The "reason" field contains the prompt that will be sent back to Claude
