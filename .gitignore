@@ -7,3 +7,4 @@
 /.claude/ralph-loop.d285a4c2-c343-467d-b144-0dceb4e960c3.local.md
 /test-results
 counter.txt
+/test-stop-hook-promise-detection.sh

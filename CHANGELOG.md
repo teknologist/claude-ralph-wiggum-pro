@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.1.1] - 2026-01-05
 
 ### Added
+- **Checklist System**: Complete task and criteria tracking for Ralph loops
+  - Bash service (`checklist-service.sh`) for checklist CRUD operations
+  - Dashboard API endpoint (`/api/checklist/:loopId`) for checklist management
+  - Dashboard service (`checklist-service.ts`) for server-side checklist operations
+  - React component (`ChecklistProgress`) for displaying checklist progress
+  - React hook (`useChecklist`) for checklist data fetching and updates
+  - Support for tasks and acceptance criteria with status tracking
 - **Checklist Progress in Stats**: `ralph-stats` command now displays checklist progress in a new column (format: "X/Y tasks • A/B criteria")
 - **Checklist in Iteration Messages**: Stop-hook now shows checklist summary in each iteration's system message
 
