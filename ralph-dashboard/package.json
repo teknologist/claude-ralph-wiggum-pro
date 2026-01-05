@@ -28,6 +28,7 @@
     "react-swipeable": "^7.0.2"
   },
   "devDependencies": {
+    "@codecov/vite-plugin": "^1.9.1",
     "@playwright/test": "^1.57.0",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.1.0",
