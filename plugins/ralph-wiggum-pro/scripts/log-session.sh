@@ -136,7 +136,6 @@ if [[ "${1:-}" == "--start" ]]; then
       completion_promise: (if $completion_promise == "" then null else $completion_promise end)
     }' > "$TEMP_ENTRY"
 
-  echo "" >> "$TEMP_ENTRY"
   cat "$TEMP_ENTRY" >> "$LOG_FILE"
 
   echo "📝 Session started - logged to $LOG_FILE"
@@ -222,7 +221,6 @@ else
       error_reason: (if $error_reason == "" then null else $error_reason end)
     }' > "$TEMP_ENTRY"
 
-  echo "" >> "$TEMP_ENTRY"
   cat "$TEMP_ENTRY" >> "$LOG_FILE"
 
   echo "📝 Session completed - logged to $LOG_FILE"

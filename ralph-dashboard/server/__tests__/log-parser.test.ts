@@ -517,6 +517,19 @@ Content`;
       const result = readIterationFromStateFile(stateFile);
       expect(result).toBeNull();
     });
+
+    it('retries on malformed content and returns null after retries', () => {
+      const stateFile = join(testDir, 'retry-test.md');
+      const content = `---
+active: true
+session_id: test-123
+iteration: 5`;
+      writeFileSync(stateFile, content);
+
+      // Malformed (no closing ---) should retry and return null
+      const result = readIterationFromStateFile(stateFile, 3);
+      expect(result).toBeNull();
+    });
   });
 
   describe('getLogFilePath', () => {

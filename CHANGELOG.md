@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.15] - 2026-01-05
+
+### Fixed
+- **Critical: Empty lines in sessions.jsonl breaking stop-hook**: log-session.sh was writing blank lines between JSONL entries, causing jq error "Cannot index array with string 'session_id'" when stop-hook tried to query the log file
+- **Stop-hook jq query**: Now filters empty lines before processing with grep to prevent jq errors on malformed JSONL data
+
+### Changed
+- **Dashboard tests**: Added 4 new tests (log-parser retry handling, loop-manager invalid path errors, StatsBar undefined duration, mobile viewport E2E)
+
 ## [2.0.14] - 2026-01-05
 
 ### Fixed

@@ -129,4 +129,20 @@ test.describe('Ralph Dashboard', () => {
     const header = page.locator('header');
     await expect(header).toHaveClass(/bg-claude-dark/);
   });
+
+  test.describe('mobile viewport', () => {
+    test.use({ viewport: { width: 375, height: 667 } });
+
+    test('displays correctly on mobile viewport', async ({ page }) => {
+      await page.goto('/');
+
+      // Should still see header
+      await expect(
+        page.getByRole('heading', { name: 'Ralph Dashboard' })
+      ).toBeVisible();
+
+      // Should still see stats bar
+      await expect(page.getByText('Total Loops')).toBeVisible();
+    });
+  });
 });

@@ -111,4 +111,29 @@ describe('StatsBar', () => {
     // Average duration should be shown in hours format
     expect(screen.getByText('2h 0m')).toBeInTheDocument();
   });
+
+  it('should handle sessions with undefined duration_seconds', () => {
+    const sessionWithNoDuration: Session[] = [
+      {
+        loop_id: 'loop-no-duration-1',
+        session_id: 'no-duration-1',
+        status: 'success',
+        outcome: 'success',
+        project: '/test/project',
+        project_name: 'project',
+        state_file_path: '/test/.claude/state.md',
+        task: 'Task with no duration',
+        started_at: '2024-01-15T09:00:00Z',
+        ended_at: '2024-01-15T09:10:00Z',
+        duration_seconds: undefined as unknown as number,
+        iterations: 5,
+        max_iterations: 10,
+        completion_promise: null,
+        error_reason: null,
+      },
+    ];
+    render(<StatsBar sessions={sessionWithNoDuration} activeCount={0} />);
+    // Should handle undefined duration gracefully (treats as 0)
+    expect(screen.getByText('0s')).toBeInTheDocument();
+  });
 });

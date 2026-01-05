@@ -9,9 +9,8 @@ const mockExistsSync = vi.mocked(fs.existsSync);
 const mockUnlinkSync = vi.mocked(fs.unlinkSync);
 
 // Import the module after mocking
-const { cancelLoop, checkStateFileExists } = await import(
-  '../services/loop-manager'
-);
+const { cancelLoop, checkStateFileExists } =
+  await import('../services/loop-manager');
 
 describe('loop-manager', () => {
   beforeEach(() => {
@@ -94,6 +93,48 @@ describe('loop-manager', () => {
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('Failed to cancel loop');
+    });
+
+    it('should fail when state file path validation fails (no project)', () => {
+      const sessionNoProject: Session = {
+        ...activeSession,
+        project: undefined as unknown as string,
+      };
+
+      const result = cancelLoop(sessionNoProject);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Invalid state file path');
+    });
+
+    it('should fail when state file path is outside project directory', () => {
+      const sessionBadPath: Session = {
+        ...activeSession,
+        state_file_path: '/etc/passwd', // Outside project directory
+      };
+
+      mockExistsSync.mockReturnValue(true);
+
+      const result = cancelLoop(sessionBadPath);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Invalid state file path');
+    });
+
+    it('should fail when resolve throws an error for invalid path', () => {
+      // Create a session with a path that might cause resolve to throw
+      const sessionInvalidPath: Session = {
+        ...activeSession,
+        state_file_path: '\x00invalid-path', // Null byte can cause errors
+      };
+
+      mockExistsSync.mockReturnValue(true);
+
+      const result = cancelLoop(sessionInvalidPath);
+
+      // Should handle the error gracefully
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Invalid state file path');
     });
   });
 

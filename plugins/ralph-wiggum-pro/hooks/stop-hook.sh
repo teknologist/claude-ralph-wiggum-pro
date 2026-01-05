@@ -45,10 +45,11 @@ find_state_file_from_log() {
 
   # Find most recent entry for this session with state_file_path
   # Use jq to extract state_file_path from the matching entry
+  # Filter out empty lines first to prevent jq errors on malformed JSONL
   local state_path
-  state_path=$(jq -rs --arg sid "$session_id" \
-    'select(.session_id == $sid and .state_file_path) | .state_file_path' \
-    "$log_file" | tail -n 1)
+  state_path=$(grep -v '^[[:space:]]*$' "$log_file" | jq -rs --arg sid "$session_id" \
+    'map(select(.session_id == $sid and .state_file_path)) | .[].state_file_path' \
+    | tail -n 1)
 
   # Validate the returned path for security (prevent path traversal)
   # - Must be absolute path (starts with /)
