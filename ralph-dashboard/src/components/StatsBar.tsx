@@ -37,7 +37,7 @@ export function StatsBar({ sessions, activeCount }: StatsBarProps) {
 
   return (
     <div
-      className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6"
+      className="bg-white dark:bg-claude-dark rounded-lg shadow-md p-4 sm:p-6 mb-6"
       data-testid="stats-bar"
     >
       <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
@@ -82,22 +82,28 @@ function StatCard({ label, value, icon, subtext, highlight }: StatCardProps) {
       data-testid="stat-card"
       className={`p-3 sm:p-4 rounded-lg ${
         highlight
-          ? 'bg-claude-coral/10 border border-claude-coral'
-          : 'bg-gray-50'
+          ? 'bg-claude-coral/10 dark:bg-claude-coral/20 border border-claude-coral'
+          : 'bg-gray-50 dark:bg-claude-dark'
       }`}
     >
-      <div className="flex items-center gap-2 text-gray-600 mb-1">
+      <div className="flex items-center gap-2 text-gray-600 dark:text-zinc-400 mb-1">
         <span className="text-sm sm:text-base">{icon}</span>
         <span className="text-xs sm:text-sm font-medium">{label}</span>
       </div>
       <div
         className={`text-xl sm:text-2xl font-bold ${
-          highlight ? 'text-claude-coral' : 'text-claude-dark'
+          highlight
+            ? 'text-claude-coral'
+            : 'text-claude-dark dark:text-zinc-100'
         }`}
       >
         {value}
       </div>
-      {subtext && <div className="text-xs text-gray-500 mt-1">{subtext}</div>}
+      {subtext && (
+        <div className="text-xs text-gray-500 dark:text-zinc-500 mt-1">
+          {subtext}
+        </div>
+      )}
     </div>
   );
 }

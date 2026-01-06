@@ -61,15 +61,15 @@ export function SessionTable({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="bg-white dark:bg-claude-dark rounded-lg shadow-md overflow-hidden">
       {/* Tabs */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-gray-200 dark:border-zinc-800">
         <button
           onClick={() => setActiveTab('active')}
           className={`flex-1 px-3 sm:px-4 py-3 text-sm font-medium transition-colors ${
             activeTab === 'active'
-              ? 'text-claude-coral border-b-2 border-claude-coral bg-claude-coral/5'
-              : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              ? 'text-claude-coral border-b-2 border-claude-coral bg-claude-coral/5 dark:bg-claude-coral/10'
+              : 'text-gray-600 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-100 hover:bg-gray-50 dark:hover:bg-zinc-800'
           }`}
         >
           Active Loops
@@ -83,12 +83,12 @@ export function SessionTable({
           onClick={() => setActiveTab('archived')}
           className={`flex-1 px-3 sm:px-4 py-3 text-sm font-medium transition-colors ${
             activeTab === 'archived'
-              ? 'text-claude-coral border-b-2 border-claude-coral bg-claude-coral/5'
-              : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              ? 'text-claude-coral border-b-2 border-claude-coral bg-claude-coral/5 dark:bg-claude-coral/10'
+              : 'text-gray-600 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-100 hover:bg-gray-50 dark:hover:bg-zinc-800'
           }`}
         >
           Archived
-          <span className="ml-2 text-gray-400">
+          <span className="ml-2 text-gray-400 dark:text-zinc-500">
             ({archivedSessions.length})
           </span>
         </button>
@@ -100,7 +100,7 @@ export function SessionTable({
             className={`px-3 sm:px-4 py-3 text-sm font-medium transition-colors ${
               deleteAllMutation.isPending
                 ? 'text-gray-400 cursor-not-allowed'
-                : 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                : 'text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20'
             }`}
             title="Delete all archived loops"
           >
@@ -127,29 +127,29 @@ export function SessionTable({
           // Key includes activeTab to force React to unmount/remount when switching tabs
           <div key={activeTab} className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     Project
                   </th>
-                  <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     Task
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     Started
                   </th>
-                  <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     Duration
                   </th>
-                  <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     Iterations
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
                 {displaySessions.map((session) => (
                   <SessionRow key={session.loop_id} session={session} />
                 ))}
@@ -158,14 +158,16 @@ export function SessionTable({
           </div>
         )
       ) : (
-        <div className="p-8 text-center text-gray-500">
+        <div className="p-8 text-center text-gray-500 dark:text-zinc-400">
           {activeTab === 'active' ? (
             <>
               <div className="text-4xl mb-2">🔄</div>
               <p>No active loops</p>
               <p className="text-sm mt-1">
                 Start a Ralph loop with{' '}
-                <code className="bg-gray-100 px-1 rounded">/ralph-loop</code>
+                <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">
+                  /ralph-loop
+                </code>
               </p>
             </>
           ) : (

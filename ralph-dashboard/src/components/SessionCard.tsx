@@ -102,7 +102,7 @@ export function SessionCard({ session }: SessionCardProps) {
     <>
       <div
         data-testid="session-card"
-        className="relative rounded-lg shadow-md overflow-hidden"
+        className="relative rounded-lg shadow-md border border-gray-200 dark:border-zinc-800 overflow-hidden"
       >
         {/* Card Header - Always Visible */}
         <div
@@ -110,7 +110,7 @@ export function SessionCard({ session }: SessionCardProps) {
           aria-expanded={isExpanded}
           aria-controls="session-detail"
           tabIndex={0}
-          className="relative bg-white p-3 sm:p-4 cursor-pointer active:scale-[0.99] active:opacity-80 transition-transform z-10"
+          className="relative bg-white dark:bg-claude-dark p-3 sm:p-4 cursor-pointer active:scale-[0.99] active:opacity-80 transition-transform z-10"
           onClick={() => setIsExpanded(!isExpanded)}
           onKeyPress={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -123,7 +123,7 @@ export function SessionCard({ session }: SessionCardProps) {
           <div className="flex items-center justify-between mb-2">
             <StatusBadge status={session.status} />
             <span
-              className={`transform transition-transform text-gray-400 ${
+              className={`transform transition-transform text-gray-400 dark:text-zinc-500 ${
                 isExpanded ? 'rotate-90' : ''
               }`}
               aria-hidden="true"
@@ -133,17 +133,17 @@ export function SessionCard({ session }: SessionCardProps) {
           </div>
 
           {/* Project Name */}
-          <h3 className="text-base sm:text-lg font-semibold text-claude-dark mb-1">
+          <h3 className="text-base sm:text-lg font-semibold text-claude-dark dark:text-zinc-100 mb-1">
             {session.project_name}
           </h3>
 
           {/* Task Description (truncated) */}
-          <p className="text-xs sm:text-sm text-gray-600 mb-3 line-clamp-2">
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-zinc-400 mb-3 line-clamp-2">
             {truncateTask(session.task, 100)}
           </p>
 
           {/* Separator */}
-          <div className="border-t border-gray-100 my-3" />
+          <div className="border-t border-gray-100 dark:border-zinc-800 my-3" />
 
           {/* Progress Bar + Iterations - hidden when expanded to avoid duplicate with SessionDetail */}
           {!isExpanded && (
@@ -162,7 +162,7 @@ export function SessionCard({ session }: SessionCardProps) {
           )}
 
           {/* Time Info */}
-          <div className="flex items-center gap-3 text-xs text-gray-500">
+          <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-zinc-500">
             <span>Started: {getTimeAgo(session.started_at)}</span>
             <span>•</span>
             <span>{formatDuration(session.duration_seconds)}</span>

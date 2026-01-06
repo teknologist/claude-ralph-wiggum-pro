@@ -69,20 +69,20 @@ export function FullTranscriptModal({
     >
       <div
         ref={modalRef}
-        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col"
+        className="bg-white dark:bg-claude-dark rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-zinc-700">
           <h2
             id="modal-title"
-            className="text-lg font-semibold text-gray-900 flex items-center gap-2"
+            className="text-lg font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2"
           >
             <span>📜</span>
             Full Transcript
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
             aria-label="Close modal"
           >
             <svg
@@ -106,7 +106,7 @@ export function FullTranscriptModal({
           {/* Loading State */}
           {isLoading && (
             <div className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-3 text-gray-500">
+              <div className="flex items-center gap-3 text-gray-500 dark:text-zinc-400">
                 <svg
                   className="animate-spin h-5 w-5"
                   xmlns="http://www.w3.org/2000/svg"
@@ -135,10 +135,10 @@ export function FullTranscriptModal({
           {/* Error State */}
           {error && !isLoading && (
             <div className="flex items-center justify-center py-12">
-              <div className="text-center text-gray-500">
+              <div className="text-center text-gray-500 dark:text-zinc-400">
                 <span className="text-4xl mb-2 block">📭</span>
                 <p className="text-sm">No full transcript available</p>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
                   Full transcripts are recorded from v2.1.0+
                 </p>
               </div>
@@ -148,7 +148,7 @@ export function FullTranscriptModal({
           {/* Empty State */}
           {!isLoading && !error && messages.length === 0 && (
             <div className="flex items-center justify-center py-12">
-              <div className="text-center text-gray-500">
+              <div className="text-center text-gray-500 dark:text-zinc-400">
                 <span className="text-4xl mb-2 block">📭</span>
                 <p className="text-sm">No messages in transcript</p>
               </div>
@@ -166,14 +166,14 @@ export function FullTranscriptModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+        <div className="px-6 py-4 border-t border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 rounded-b-xl">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 dark:text-zinc-500">
               {messages.length} message{messages.length !== 1 ? 's' : ''}
             </span>
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+              className="px-4 py-2 bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-100 rounded-lg hover:bg-gray-300 dark:hover:bg-zinc-600 transition-colors text-sm font-medium"
             >
               Close
             </button>
@@ -197,12 +197,12 @@ function MessageBubble({ message }: MessageBubbleProps) {
         className={`max-w-[85%] rounded-lg p-4 ${
           isUser
             ? 'bg-claude-coral text-white'
-            : 'bg-gray-100 text-gray-800 border border-gray-200'
+            : 'bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-zinc-100 border border-gray-200 dark:border-zinc-700'
         }`}
       >
         <div
           className={`text-xs font-medium mb-2 ${
-            isUser ? 'text-white/80' : 'text-gray-500'
+            isUser ? 'text-white/80' : 'text-gray-500 dark:text-zinc-400'
           }`}
         >
           {isUser ? '👤 You' : '🤖 Claude'}

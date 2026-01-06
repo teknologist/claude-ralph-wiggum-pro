@@ -53,7 +53,7 @@ export function ProgressBar({
   if (current === null) {
     return (
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-400">N/A</span>
+        <span className="text-sm text-gray-400 dark:text-zinc-500">N/A</span>
       </div>
     );
   }
@@ -63,7 +63,7 @@ export function ProgressBar({
     return (
       <div className="flex items-center gap-1 sm:gap-2 min-w-[80px] sm:min-w-[100px]">
         <div
-          className={`flex-1 ${heightClass} bg-gray-200 rounded-full overflow-hidden`}
+          className={`flex-1 ${heightClass} bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden`}
         >
           <div
             className={`${heightClass} ${colorClass} transition-all duration-300 ${isActive ? 'animate-pulse' : ''}`}
@@ -71,12 +71,12 @@ export function ProgressBar({
           />
         </div>
         {showLabel && !compact && (
-          <span className="text-xs text-gray-600 whitespace-nowrap">
+          <span className="text-xs text-gray-600 dark:text-zinc-400 whitespace-nowrap">
             {current}/{max}
           </span>
         )}
         {compact && (
-          <span className="text-xs text-gray-600 whitespace-nowrap">
+          <span className="text-xs text-gray-600 dark:text-zinc-400 whitespace-nowrap">
             {current}/{max}
           </span>
         )}
@@ -88,17 +88,17 @@ export function ProgressBar({
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-xs sm:text-sm font-medium text-gray-500">
+        <label className="text-xs sm:text-sm font-medium text-gray-500 dark:text-zinc-400">
           Iterations
         </label>
         {showPercentage && (
-          <span className="text-xs sm:text-sm font-semibold text-claude-dark">
+          <span className="text-xs sm:text-sm font-semibold text-claude-dark dark:text-zinc-100">
             {percentage}%
           </span>
         )}
       </div>
       <div
-        className={`${heightClass} bg-gray-200 rounded-full overflow-hidden`}
+        className={`${heightClass} bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden`}
       >
         <div
           className={`${heightClass} ${colorClass} transition-all duration-300 ${isActive ? 'animate-pulse' : ''}`}
@@ -106,7 +106,7 @@ export function ProgressBar({
         />
       </div>
       {showLabel && (
-        <div className="text-sm sm:text-base font-semibold text-claude-dark text-right mt-1">
+        <div className="text-sm sm:text-base font-semibold text-claude-dark dark:text-zinc-100 text-right mt-1">
           {current} / {max}
         </div>
       )}

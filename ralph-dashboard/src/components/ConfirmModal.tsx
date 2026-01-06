@@ -109,16 +109,19 @@ export function ConfirmModal({
         aria-modal="true"
         aria-labelledby={titleId.current}
         aria-describedby={messageId.current}
-        className="relative bg-white rounded-t-lg sm:rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
+        className="relative bg-white dark:bg-claude-dark rounded-t-lg sm:rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
         onKeyDown={handleKeyDown}
       >
         <h2
           id={titleId.current}
-          className="text-xl font-bold text-claude-dark mb-2"
+          className="text-xl font-bold text-claude-dark dark:text-zinc-100 mb-2"
         >
           {title}
         </h2>
-        <p id={messageId.current} className="text-gray-600 mb-6">
+        <p
+          id={messageId.current}
+          className="text-gray-600 dark:text-zinc-400 mb-6"
+        >
           {message}
         </p>
 
@@ -126,7 +129,7 @@ export function ConfirmModal({
           <button
             onClick={onCancel}
             disabled={isLoading}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 min-h-[44px]"
+            className="px-4 py-2 text-gray-600 dark:text-zinc-300 hover:text-gray-800 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-50 min-h-[44px]"
             aria-disabled={isLoading}
           >
             {cancelLabel}

@@ -58,7 +58,10 @@ function highlightText(text: string, searchTerm: string): React.ReactNode {
 
   return parts.map((part, index) =>
     regex.test(part) ? (
-      <mark key={index} className="bg-yellow-200 px-0.5 rounded">
+      <mark
+        key={index}
+        className="bg-yellow-200 dark:bg-yellow-900/50 px-0.5 rounded"
+      >
         {part}
       </mark>
     ) : (
@@ -68,7 +71,7 @@ function highlightText(text: string, searchTerm: string): React.ReactNode {
 }
 
 export function TranscriptTimeline({ session }: TranscriptTimelineProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false); // Collapsed by default
   const [expandedIterations, setExpandedIterations] = useState<Set<number>>(
     new Set()
   );
@@ -135,185 +138,259 @@ export function TranscriptTimeline({ session }: TranscriptTimelineProps) {
   const iterationCount = iterations.length;
   const headerLabel =
     iterationCount > 0
-      ? `Transcript (${iterationCount} iterations)`
+      ? `Transcript (${iterationCount} iteration${iterationCount !== 1 ? 's' : ''})`
       : 'Transcript';
 
   return (
-    <div className="py-4 sm:py-6 ml-4 pl-4 border-l border-gray-300">
-      {/* Collapsible Header */}
-      <button
+    <div className="bg-white dark:bg-claude-dark rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+      {/* Header with summary */}
+      <div
         onClick={toggleExpand}
-        className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-claude-coral transition-colors w-full text-left"
+        className="px-4 py-3 bg-gray-50 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700 cursor-pointer"
+        role="button"
+        tabIndex={0}
         aria-expanded={isExpanded}
-        aria-controls="transcript-content"
       >
-        <span
-          className={`transform transition-transform duration-200 ${
-            isExpanded ? 'rotate-90' : ''
-          }`}
-          aria-hidden="true"
-        >
-          ▶
-        </span>
-        <span>{headerLabel}</span>
-      </button>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
+            <span
+              className={`transform transition-transform duration-200 text-gray-400 dark:text-zinc-500 ${
+                isExpanded ? 'rotate-90' : ''
+              }`}
+              aria-hidden="true"
+            >
+              ▶
+            </span>
+            <svg
+              className="w-4 h-4 text-claude-coral"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            {headerLabel}
+          </h3>
+        </div>
+      </div>
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div
-          id="transcript-content"
-          className="mt-4 ml-2 border-l-2 border-gray-200 pl-4"
-        >
+        <>
           {/* Loading State */}
           {isLoading && (
-            <div className="flex items-center gap-2 text-gray-500 py-4">
-              <svg
-                className="animate-spin h-4 w-4"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              <span className="text-sm">Loading transcript...</span>
+            <div className="flex items-center justify-center py-12">
+              <div className="flex items-center gap-3 text-gray-500 dark:text-zinc-400">
+                <svg
+                  className="animate-spin h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <span className="text-sm">Loading transcript...</span>
+              </div>
             </div>
           )}
 
           {/* Error State */}
           {error && !isLoading && (
-            <div className="text-gray-500 text-sm py-4 flex items-center gap-2">
-              <span>📭</span>
-              <span>No transcript available (recorded from v2.1.0+)</span>
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center text-gray-500 dark:text-zinc-400">
+                <span className="text-4xl mb-2 block">📭</span>
+                <p className="text-sm">
+                  No transcript available (recorded from v2.1.0+)
+                </p>
+              </div>
             </div>
           )}
 
           {/* Timeline Content - always shown when not loading/error */}
           {!isLoading && !error && (
-            <div className="space-y-4">
+            <div className="bg-gray-300 dark:bg-zinc-900 py-4">
               {/* Toolbar - only shown when there are iterations */}
               {iterations.length > 0 && (
-                <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between bg-gray-50 rounded-lg p-2 -ml-4 border-l-0">
-                  {/* Search */}
-                  <div className="relative flex-1 max-w-xs">
-                    <input
-                      type="text"
-                      placeholder="Search iterations..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-claude-coral/50 focus:border-claude-coral"
-                      aria-label="Search iterations"
-                    />
-                    <svg
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                <div className="p-3 mx-4 mb-4 bg-white dark:bg-zinc-800 rounded-lg">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                    {/* Search */}
+                    <div className="relative flex-1 max-w-xs">
+                      <input
+                        type="text"
+                        placeholder="Search iterations..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-claude-coral/50 focus:border-claude-coral dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-500"
+                        aria-label="Search iterations"
                       />
-                    </svg>
-                    {searchTerm && (
-                      <button
-                        onClick={() => setSearchTerm('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        aria-label="Clear search"
+                      <svg
+                        className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                          aria-label="Clear search"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
 
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setShowFullTranscript(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-claude-coral hover:bg-white rounded-lg transition-colors"
-                      title="View full transcript"
-                    >
-                      <span>📜</span>
-                      <span className="hidden sm:inline">View Full</span>
-                    </button>
-                    <button
-                      onClick={handleExport}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-claude-coral hover:bg-white rounded-lg transition-colors"
-                      title="Export as Markdown"
-                    >
-                      <span>📥</span>
-                      <span className="hidden sm:inline">Export</span>
-                    </button>
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowFullTranscript(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-zinc-400 hover:text-claude-coral dark:hover:text-claude-coral-dark hover:bg-white dark:hover:bg-zinc-900 rounded-lg transition-colors"
+                        title="View full transcript"
+                      >
+                        <span>📜</span>
+                        <span className="hidden sm:inline">View Full</span>
+                      </button>
+                      <button
+                        onClick={handleExport}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-zinc-400 hover:text-claude-coral dark:hover:text-claude-coral-dark hover:bg-white dark:hover:bg-zinc-900 rounded-lg transition-colors"
+                        title="Export as Markdown"
+                      >
+                        <span>📥</span>
+                        <span className="hidden sm:inline">Export</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
 
               {/* Search Results Count - only shown when there are iterations */}
               {iterations.length > 0 && searchTerm && (
-                <div className="text-xs text-gray-500">
+                <div className="px-4 pb-2 text-xs text-gray-500 dark:text-zinc-500">
                   Found {filteredIterations.length} of {iterations.length}{' '}
-                  iterations
+                  iteration{iterations.length !== 1 ? 's' : ''}
                 </div>
               )}
 
               {/* User Prompt */}
-              <div className="relative">
-                <div className="absolute -left-[21px] top-3 w-3 h-3 bg-blue-400 rounded-full border-2 border-white" />
-                <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-3 shadow-sm">
-                  <div className="flex items-center gap-2 text-blue-700 font-medium text-sm mb-2">
-                    <span>📝</span>
-                    <span>USER PROMPT</span>
-                  </div>
-                  <p className="text-gray-700 text-sm whitespace-pre-wrap break-words">
-                    {session.task || 'No task description'}
-                  </p>
+              <div className="p-4 mx-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-medium text-sm mb-2">
+                  <span>📝</span>
+                  <span>USER PROMPT</span>
                 </div>
+                <p className="text-gray-700 dark:text-zinc-100 text-sm whitespace-pre-wrap break-words">
+                  {session.task || 'No task description'}
+                </p>
               </div>
 
+              {/* Arrow from prompt to iterations */}
+              {filteredIterations.length > 0 && (
+                <div className="flex justify-center py-2">
+                  <svg
+                    className="w-6 h-6 text-gray-600 dark:text-zinc-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                    />
+                  </svg>
+                </div>
+              )}
+
               {/* Iterations */}
-              {filteredIterations.map((iteration) => (
-                <IterationCard
-                  key={iteration.iteration}
-                  iteration={iteration}
-                  isExpanded={expandedIterations.has(iteration.iteration)}
-                  onToggleExpand={() =>
-                    toggleIterationExpand(iteration.iteration)
-                  }
-                  searchTerm={searchTerm}
-                />
+              {filteredIterations.map((iteration, index) => (
+                <div key={iteration.iteration} className="px-4">
+                  <IterationCard
+                    iteration={iteration}
+                    isExpanded={expandedIterations.has(iteration.iteration)}
+                    onToggleExpand={() =>
+                      toggleIterationExpand(iteration.iteration)
+                    }
+                    searchTerm={searchTerm}
+                  />
+                  {/* Down arrow between iterations */}
+                  {index < filteredIterations.length - 1 && (
+                    <div className="flex justify-center py-2">
+                      <svg
+                        className="w-6 h-6 text-gray-600 dark:text-zinc-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </div>
               ))}
 
+              {/* Arrow to completion status */}
+              <div className="flex justify-center py-2">
+                <svg
+                  className="w-6 h-6 text-gray-600 dark:text-zinc-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                  />
+                </svg>
+              </div>
+
               {/* Completion Status */}
-              <CompletionStatus session={session} />
+              <div className="px-4">
+                <CompletionStatus session={session} />
+              </div>
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* Full Transcript Modal */}
@@ -347,33 +424,30 @@ function IterationCard({
     : truncateText(iteration.output, 300);
 
   return (
-    <div className="relative">
-      <div className="absolute -left-[21px] top-3 w-3 h-3 bg-gray-400 rounded-full border-2 border-white" />
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100">
-          <div className="flex items-center gap-2 text-gray-700 font-medium text-sm">
-            <span>🔄</span>
-            <span>Iteration {iteration.iteration}</span>
-          </div>
-          {iteration.duration && (
-            <span className="bg-claude-coral/10 text-claude-coral text-xs font-medium px-2 py-0.5 rounded-full">
-              {iteration.duration}
-            </span>
-          )}
+    <div className="bg-white dark:bg-claude-dark border border-gray-200 dark:border-zinc-700 rounded-lg shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-zinc-800 border-b border-gray-100 dark:border-zinc-700">
+        <div className="flex items-center gap-2 text-gray-700 dark:text-zinc-100 font-medium text-sm">
+          <span>🔄</span>
+          <span>Iteration {iteration.iteration}</span>
         </div>
-        <div className="p-3">
-          <p className="text-gray-600 text-sm whitespace-pre-wrap break-words">
-            {highlightText(displayText, searchTerm)}
-          </p>
-          {needsTruncation && (
-            <button
-              onClick={onToggleExpand}
-              className="mt-2 text-xs text-claude-coral hover:text-claude-coral-dark font-medium"
-            >
-              {isExpanded ? 'Show less' : 'Show more'}
-            </button>
-          )}
-        </div>
+        {iteration.duration && (
+          <span className="bg-claude-coral/10 dark:bg-claude-coral/20 text-claude-coral text-xs font-medium px-2 py-0.5 rounded-full">
+            {iteration.duration}
+          </span>
+        )}
+      </div>
+      <div className="p-3">
+        <p className="text-gray-600 dark:text-zinc-300 text-sm whitespace-pre-wrap break-words">
+          {highlightText(displayText, searchTerm)}
+        </p>
+        {needsTruncation && (
+          <button
+            onClick={onToggleExpand}
+            className="mt-2 text-xs text-claude-coral hover:text-claude-coral-dark font-medium"
+          >
+            {isExpanded ? 'Show less' : 'Show more'}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -411,13 +485,10 @@ function CompletionStatus({ session }: CompletionStatusProps) {
 
   if (isActive) {
     return (
-      <div className="relative">
-        <div className="absolute -left-[21px] top-3 w-3 h-3 bg-amber-400 rounded-full border-2 border-white animate-pulse" />
-        <div className="border-2 border-dashed border-amber-400 bg-amber-50 rounded-lg p-3">
-          <div className="flex items-center gap-2 text-amber-700 font-medium text-sm">
-            <span>⏳</span>
-            <span>IN PROGRESS...</span>
-          </div>
+      <div className="border-2 border-dashed border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/30 rounded-lg p-3">
+        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-medium text-sm">
+          <span>⏳</span>
+          <span>IN PROGRESS...</span>
         </div>
       </div>
     );
@@ -425,119 +496,106 @@ function CompletionStatus({ session }: CompletionStatusProps) {
 
   if (isSuccess) {
     return (
-      <div className="relative">
-        <div className="absolute -left-[21px] top-3 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-        <div className="bg-green-50 border-2 border-green-400 rounded-lg p-3 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 text-green-700 font-medium text-sm">
-              <span>✅</span>
-              <span>COMPLETED</span>
-            </div>
-            {session.duration_seconds && (
-              <span className="text-green-600 text-xs font-medium">
-                {formatTotalDuration()}
-              </span>
-            )}
+      <div className="bg-green-50 dark:bg-green-900/30 border-2 border-green-400 dark:border-green-700 rounded-lg p-3 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-medium text-sm">
+            <span>✅</span>
+            <span>COMPLETED</span>
           </div>
-          {session.completion_promise && (
-            <p className="text-green-600 text-sm">
-              Promise fulfilled:{' '}
-              <code className="bg-green-100 px-1 rounded">
-                &lt;promise&gt;{session.completion_promise}&lt;/promise&gt;
-              </code>
-            </p>
+          {session.duration_seconds && (
+            <span className="text-green-600 dark:text-green-400 text-xs font-medium">
+              {formatTotalDuration()}
+            </span>
           )}
         </div>
+        {session.completion_promise && (
+          <p className="text-green-600 dark:text-green-400 text-sm">
+            Promise fulfilled:{' '}
+            <code className="bg-green-100 dark:bg-green-900/50 px-1 rounded">
+              &lt;promise&gt;{session.completion_promise}&lt;/promise&gt;
+            </code>
+          </p>
+        )}
       </div>
     );
   }
 
   if (isMaxIterations) {
     return (
-      <div className="relative">
-        <div className="absolute -left-[21px] top-3 w-3 h-3 bg-orange-500 rounded-full border-2 border-white" />
-        <div className="bg-orange-50 border-2 border-orange-400 rounded-lg p-3 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 text-orange-700 font-medium text-sm">
-              <span>🔁</span>
-              <span>MAX ITERATIONS REACHED</span>
-            </div>
-            {session.duration_seconds && (
-              <span className="text-orange-600 text-xs font-medium">
-                {formatTotalDuration()}
-              </span>
-            )}
+      <div className="bg-orange-50 dark:bg-orange-900/30 border-2 border-orange-400 dark:border-orange-700 rounded-lg p-3 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 text-orange-700 dark:text-orange-400 font-medium text-sm">
+            <span>🔁</span>
+            <span>MAX ITERATIONS REACHED</span>
           </div>
-          <p className="text-orange-600 text-sm">
-            Loop stopped after {session.iterations} iterations (max:{' '}
-            {session.max_iterations})
-          </p>
+          {session.duration_seconds && (
+            <span className="text-orange-600 dark:text-orange-400 text-xs font-medium">
+              {formatTotalDuration()}
+            </span>
+          )}
         </div>
+        <p className="text-orange-600 dark:text-orange-400 text-sm">
+          Loop stopped after {session.iterations} iterations (max:{' '}
+          {session.max_iterations})
+        </p>
       </div>
     );
   }
 
   if (isCancelled) {
     return (
-      <div className="relative">
-        <div className="absolute -left-[21px] top-3 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
-        <div className="bg-red-50 border-2 border-red-300 rounded-lg p-3 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 text-red-700 font-medium text-sm">
-              <span>⏹</span>
-              <span>CANCELLED</span>
-            </div>
-            {session.duration_seconds && (
-              <span className="text-red-600 text-xs font-medium">
-                {formatTotalDuration()}
-              </span>
-            )}
+      <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-700 rounded-lg p-3 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm">
+            <span>⏹</span>
+            <span>CANCELLED</span>
           </div>
-          <p className="text-red-600 text-sm">
-            Loop was cancelled by user after {session.iterations} iterations
-          </p>
+          {session.duration_seconds && (
+            <span className="text-red-600 dark:text-red-400 text-xs font-medium">
+              {formatTotalDuration()}
+            </span>
+          )}
         </div>
+        <p className="text-red-600 dark:text-red-400 text-sm">
+          Loop was cancelled by user after {session.iterations} iterations
+        </p>
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="relative">
-        <div className="absolute -left-[21px] top-3 w-3 h-3 bg-red-600 rounded-full border-2 border-white" />
-        <div className="bg-red-50 border-2 border-red-400 rounded-lg p-3 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 text-red-700 font-medium text-sm">
-              <span>❌</span>
-              <span>ERROR</span>
-            </div>
-            {session.duration_seconds && (
-              <span className="text-red-600 text-xs font-medium">
-                {formatTotalDuration()}
-              </span>
-            )}
+      <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-400 dark:border-red-700 rounded-lg p-3 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm">
+            <span>❌</span>
+            <span>ERROR</span>
           </div>
-          {session.error_reason && (
-            <p className="text-red-600 text-sm">{session.error_reason}</p>
+          {session.duration_seconds && (
+            <span className="text-red-600 dark:text-red-400 text-xs font-medium">
+              {formatTotalDuration()}
+            </span>
           )}
         </div>
+        {session.error_reason && (
+          <p className="text-red-600 dark:text-red-400 text-sm">
+            {session.error_reason}
+          </p>
+        )}
       </div>
     );
   }
 
   if (isOrphaned) {
     return (
-      <div className="relative">
-        <div className="absolute -left-[21px] top-3 w-3 h-3 bg-gray-500 rounded-full border-2 border-white" />
-        <div className="bg-gray-100 border-2 border-gray-300 rounded-lg p-3 shadow-sm">
-          <div className="flex items-center gap-2 text-gray-700 font-medium text-sm">
-            <span>👻</span>
-            <span>ORPHANED</span>
-          </div>
-          <p className="text-gray-600 text-sm mt-1">
-            Session became orphaned (terminal closed or state file missing)
-          </p>
+      <div className="bg-gray-100 dark:bg-zinc-800 border-2 border-gray-300 dark:border-zinc-700 rounded-lg p-3 shadow-sm">
+        <div className="flex items-center gap-2 text-gray-700 dark:text-zinc-100 font-medium text-sm">
+          <span>👻</span>
+          <span>ORPHANED</span>
         </div>
+        <p className="text-gray-600 dark:text-zinc-400 text-sm mt-1">
+          Session became orphaned (terminal closed or state file missing)
+        </p>
       </div>
     );
   }

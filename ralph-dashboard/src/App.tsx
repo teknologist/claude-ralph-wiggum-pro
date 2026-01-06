@@ -11,13 +11,13 @@ export function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('table');
 
   return (
-    <div className="min-h-screen bg-claude-cream">
+    <div className="min-h-screen bg-claude-cream dark:bg-zinc-950">
       <Header viewMode={viewMode} setViewMode={setViewMode} />
 
       <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {isLoading && (
           <div className="flex items-center justify-center py-12">
-            <div className="flex items-center gap-3 text-gray-600">
+            <div className="flex items-center gap-3 text-gray-600 dark:text-zinc-400">
               <svg
                 className="animate-spin h-6 w-6"
                 xmlns="http://www.w3.org/2000/svg"
@@ -44,8 +44,8 @@ export function App() {
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center gap-2 text-red-700">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
               <span>⚠</span>
               <span>Failed to load sessions: {error.message}</span>
             </div>
@@ -67,7 +67,7 @@ export function App() {
         )}
       </main>
 
-      <footer className="mt-8 py-4 text-center text-gray-500 text-sm">
+      <footer className="mt-8 py-4 text-center text-gray-500 dark:text-zinc-500 text-sm">
         <p>
           Ralph Dashboard - Part of the Ralph Wiggum Pro plugin for Claude Code
           - Crafted with ❤️ in Biarritz

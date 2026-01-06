@@ -13,21 +13,21 @@ const statusConfig: Record<
 > = {
   pending: {
     label: 'Pending',
-    bgColor: 'bg-gray-100',
-    textColor: 'text-gray-700',
-    borderColor: 'border-gray-300',
+    bgColor: 'bg-gray-100 dark:bg-zinc-800',
+    textColor: 'text-gray-700 dark:text-zinc-300',
+    borderColor: 'border-gray-300 dark:border-zinc-600',
   },
   in_progress: {
     label: 'In Progress',
-    bgColor: 'bg-blue-50',
-    textColor: 'text-blue-700',
-    borderColor: 'border-blue-300',
+    bgColor: 'bg-blue-50 dark:bg-blue-900/30',
+    textColor: 'text-blue-700 dark:text-blue-400',
+    borderColor: 'border-blue-300 dark:border-blue-700',
   },
   completed: {
     label: 'Completed',
-    bgColor: 'bg-green-50',
-    textColor: 'text-green-700',
-    borderColor: 'border-green-300',
+    bgColor: 'bg-green-50 dark:bg-green-900/30',
+    textColor: 'text-green-700 dark:text-green-400',
+    borderColor: 'border-green-300 dark:border-green-700',
   },
 };
 
@@ -59,8 +59,8 @@ function ChecklistItemRow({
     <div
       className={`flex items-start gap-3 py-2 px-3 rounded transition-colors ${
         isTodoPlaceholder
-          ? 'bg-amber-50 hover:bg-amber-100'
-          : 'hover:bg-gray-50'
+          ? 'bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-900/50'
+          : 'hover:bg-gray-50 dark:hover:bg-zinc-800'
       }`}
     >
       <div className="flex-shrink-0 mt-0.5">
@@ -128,28 +128,28 @@ function ChecklistItemRow({
         <p
           className={`text-sm font-medium ${
             isTodoPlaceholder
-              ? 'text-amber-700 italic'
+              ? 'text-amber-700 dark:text-amber-400 italic'
               : item.status === 'completed'
-                ? 'text-gray-500 line-through'
-                : 'text-gray-900'
+                ? 'text-gray-500 dark:text-zinc-500 line-through'
+                : 'text-gray-900 dark:text-zinc-100'
           }`}
         >
           {item.text}
         </p>
         {isTodoPlaceholder && (
-          <p className="text-xs text-amber-600 mt-0.5">
+          <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
             Please define this acceptance criterion
           </p>
         )}
         {!isTodoPlaceholder && item.completed_iteration && (
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">
             Completed in iteration {item.completed_iteration}
           </p>
         )}
       </div>
       <div className="flex-shrink-0">
         {isTodoPlaceholder ? (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border bg-amber-100 text-amber-700 border-amber-300">
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700">
             Needs Definition
           </span>
         ) : (
@@ -196,10 +196,10 @@ export function ChecklistProgress({
 
   if (isLoading) {
     return (
-      <div className="bg-white p-4 rounded-lg border border-gray-200">
+      <div className="bg-white dark:bg-claude-dark p-4 rounded-lg border border-gray-200 dark:border-zinc-700">
         <div className="flex items-center justify-center py-4">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-claude-coral"></div>
-          <span className="ml-2 text-sm text-gray-600">
+          <span className="ml-2 text-sm text-gray-600 dark:text-zinc-400">
             Loading checklist...
           </span>
         </div>
@@ -209,8 +209,8 @@ export function ChecklistProgress({
 
   if (isError) {
     return (
-      <div className="bg-white p-4 rounded-lg border border-gray-200">
-        <p className="text-sm text-red-600">
+      <div className="bg-white dark:bg-claude-dark p-4 rounded-lg border border-gray-200 dark:border-zinc-700">
+        <p className="text-sm text-red-600 dark:text-red-400">
           Failed to load checklist: {error?.message}
         </p>
       </div>
@@ -229,11 +229,11 @@ export function ChecklistProgress({
   const hasItems = criteriaCount > 0;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white dark:bg-claude-dark rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
       {/* Header with summary */}
-      <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+      <div className="px-4 py-3 bg-gray-50 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
             <svg
               className="w-4 h-4 text-claude-coral"
               fill="currentColor"
@@ -257,13 +257,13 @@ export function ChecklistProgress({
 
       {/* Acceptance Criteria */}
       {hasItems ? (
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 dark:divide-zinc-700">
           {data.checklist.completion_criteria.map((item) => (
             <ChecklistItemRow key={item.id} item={item} />
           ))}
         </div>
       ) : (
-        <div className="px-4 py-3 text-sm text-gray-500 italic">
+        <div className="px-4 py-3 text-sm text-gray-500 dark:text-zinc-500 italic">
           No acceptance criteria defined yet
         </div>
       )}

@@ -92,7 +92,7 @@ export function SessionRow({ session }: SessionRowProps) {
   return (
     <>
       <tr
-        className="hover:bg-gray-50 cursor-pointer transition-colors"
+        className="hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <td className="px-4 py-3">
@@ -105,24 +105,24 @@ export function SessionRow({ session }: SessionRowProps) {
             >
               ▶
             </span>
-            <span className="font-medium text-claude-dark">
+            <span className="font-medium text-claude-dark dark:text-zinc-100">
               {session.project_name}
             </span>
           </div>
         </td>
-        <td className="hidden sm:table-cell px-4 py-3 text-gray-600 max-w-md">
+        <td className="hidden sm:table-cell px-4 py-3 text-gray-600 dark:text-zinc-400 max-w-md">
           {truncateTask(session.task)}
         </td>
         <td className="px-4 py-3">
           <StatusBadge status={session.status} />
         </td>
-        <td className="hidden md:table-cell px-4 py-3 text-gray-600 text-sm">
+        <td className="hidden md:table-cell px-4 py-3 text-gray-600 dark:text-zinc-400 text-sm">
           {formatDate(session.started_at)}
         </td>
-        <td className="hidden sm:table-cell px-4 py-3 text-gray-600">
+        <td className="hidden sm:table-cell px-4 py-3 text-gray-600 dark:text-zinc-400">
           {formatDuration(session.duration_seconds)}
         </td>
-        <td className="hidden sm:table-cell px-4 py-3 text-gray-600">
+        <td className="hidden sm:table-cell px-4 py-3 text-gray-600 dark:text-zinc-400">
           <ProgressBar
             current={session.iterations}
             max={session.max_iterations}

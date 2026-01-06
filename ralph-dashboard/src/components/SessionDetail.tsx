@@ -50,33 +50,36 @@ export function SessionDetail({
   };
 
   return (
-    <div id={id} className="bg-gray-50 p-3 sm:p-4 border-t border-gray-200">
+    <div
+      id={id}
+      className="bg-gray-50 dark:bg-zinc-900/50 p-3 sm:p-4 border-t border-gray-200 dark:border-zinc-800"
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         {/* Started At, Ended At, Duration on same line */}
         <div className="md:col-span-2 flex flex-col sm:flex-row sm:justify-between gap-3 sm:gap-4">
           <div>
-            <label className="text-xs sm:text-sm font-medium text-gray-500">
+            <label className="text-xs sm:text-sm font-medium text-gray-500 dark:text-zinc-400">
               Started
             </label>
-            <p className="mt-1 text-claude-dark text-xs sm:text-sm">
+            <p className="mt-1 text-claude-dark dark:text-zinc-100 text-xs sm:text-sm">
               {formatDate(session.started_at)}
             </p>
           </div>
           {session.ended_at && (
             <div>
-              <label className="text-xs sm:text-sm font-medium text-gray-500">
+              <label className="text-xs sm:text-sm font-medium text-gray-500 dark:text-zinc-400">
                 Ended
               </label>
-              <p className="mt-1 text-claude-dark text-xs sm:text-sm">
+              <p className="mt-1 text-claude-dark dark:text-zinc-100 text-xs sm:text-sm">
                 {formatDate(session.ended_at)}
               </p>
             </div>
           )}
           <div>
-            <label className="text-xs sm:text-sm font-medium text-gray-500">
+            <label className="text-xs sm:text-sm font-medium text-gray-500 dark:text-zinc-400">
               Duration
             </label>
-            <p className="mt-1 text-claude-dark text-xs sm:text-sm">
+            <p className="mt-1 text-claude-dark dark:text-zinc-100 text-xs sm:text-sm">
               {formatDuration(session.duration_seconds)}
             </p>
           </div>
@@ -98,7 +101,7 @@ export function SessionDetail({
         {(session.has_checklist ||
           session.status === 'active' ||
           session.status === 'orphaned') && (
-          <div className="md:col-span-2 mt-3 sm:mt-4">
+          <div className="md:col-span-2 mt-3 sm:mt-4 pb-3 sm:pb-4">
             <ErrorBoundary>
               <ChecklistProgress
                 loopId={session.loop_id}
@@ -134,22 +137,22 @@ export function SessionDetail({
               {/* Session ID and Loop ID on same line */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="text-xs sm:text-sm font-medium text-gray-500">
+                  <label className="text-xs sm:text-sm font-medium text-gray-500 dark:text-zinc-400">
                     Session ID
                   </label>
                   <p
-                    className="mt-1 text-claude-dark font-mono text-xs sm:text-sm break-all sm:truncate sm:break-normal"
+                    className="mt-1 text-claude-dark dark:text-zinc-100 font-mono text-xs sm:text-sm break-all sm:truncate sm:break-normal"
                     title={session.session_id}
                   >
                     {session.session_id}
                   </p>
                 </div>
                 <div>
-                  <label className="text-xs sm:text-sm font-medium text-gray-500">
+                  <label className="text-xs sm:text-sm font-medium text-gray-500 dark:text-zinc-400">
                     Loop ID
                   </label>
                   <p
-                    className="mt-1 text-claude-dark font-mono text-xs sm:text-sm break-all sm:truncate sm:break-normal"
+                    className="mt-1 text-claude-dark dark:text-zinc-100 font-mono text-xs sm:text-sm break-all sm:truncate sm:break-normal"
                     title={session.loop_id}
                   >
                     {session.loop_id}
@@ -159,32 +162,34 @@ export function SessionDetail({
 
               {/* Project Path */}
               <div>
-                <label className="text-xs sm:text-sm font-medium text-gray-500">
+                <label className="text-xs sm:text-sm font-medium text-gray-500 dark:text-zinc-400">
                   Project Path
                 </label>
-                <p className="mt-1 text-claude-dark font-mono text-xs sm:text-sm break-all">
+                <p className="mt-1 text-claude-dark dark:text-zinc-100 font-mono text-xs sm:text-sm break-all">
                   {session.project}
                 </p>
               </div>
 
               {/* Task */}
               <div>
-                <label className="text-xs sm:text-sm font-medium text-gray-500">
+                <label className="text-xs sm:text-sm font-medium text-gray-500 dark:text-zinc-400">
                   Task
                 </label>
-                <p className="mt-1 text-claude-dark whitespace-pre-wrap text-xs sm:text-sm break-words">
+                <p className="mt-1 text-claude-dark dark:text-zinc-100 whitespace-pre-wrap text-xs sm:text-sm break-words">
                   {session.task || 'No task description'}
                 </p>
               </div>
 
               {/* Completion Promise */}
               <div>
-                <label className="text-xs sm:text-sm font-medium text-gray-500">
+                <label className="text-xs sm:text-sm font-medium text-gray-500 dark:text-zinc-400">
                   Completion Promise
                 </label>
-                <p className="mt-1 text-claude-dark whitespace-pre-wrap text-xs sm:text-sm break-words">
+                <p className="mt-1 text-claude-dark dark:text-zinc-100 whitespace-pre-wrap text-xs sm:text-sm break-words">
                   {session.completion_promise || (
-                    <span className="text-gray-400 italic">None set</span>
+                    <span className="text-gray-400 dark:text-zinc-500 italic">
+                      None set
+                    </span>
                   )}
                 </p>
               </div>
@@ -192,10 +197,10 @@ export function SessionDetail({
               {/* State File Path (for active sessions) */}
               {session.status === 'active' && session.state_file_path && (
                 <div>
-                  <label className="text-xs sm:text-sm font-medium text-gray-500">
+                  <label className="text-xs sm:text-sm font-medium text-gray-500 dark:text-zinc-400">
                     State File
                   </label>
-                  <p className="mt-1 text-claude-dark font-mono text-xs sm:text-sm break-all">
+                  <p className="mt-1 text-claude-dark dark:text-zinc-100 font-mono text-xs sm:text-sm break-all">
                     {session.state_file_path}
                   </p>
                 </div>
@@ -204,10 +209,10 @@ export function SessionDetail({
               {/* Error Reason (if any) */}
               {session.error_reason && (
                 <div>
-                  <label className="text-xs sm:text-sm font-medium text-red-500">
+                  <label className="text-xs sm:text-sm font-medium text-red-500 dark:text-red-400">
                     Error
                   </label>
-                  <p className="mt-1 text-red-600 text-xs sm:text-sm">
+                  <p className="mt-1 text-red-600 dark:text-red-400 text-xs sm:text-sm">
                     {session.error_reason}
                   </p>
                 </div>
@@ -219,11 +224,11 @@ export function SessionDetail({
 
       {/* Cancel Button (for active sessions) */}
       {session.status === 'active' && (
-        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200 dark:border-zinc-800">
           <button
             onClick={onCancel}
             disabled={isCancelling}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-2 min-h-[44px] active:scale-[0.98] active:opacity-80 transition-transform"
+            className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2 min-h-[44px] active:scale-[0.98] active:opacity-80 transition-transform"
             aria-disabled={isCancelling}
           >
             {isCancelling ? (
@@ -260,11 +265,11 @@ export function SessionDetail({
 
       {/* Archive Button (for orphaned sessions) */}
       {session.status === 'orphaned' && onArchive && (
-        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200 dark:border-zinc-800">
           <button
             onClick={onArchive}
             disabled={isArchiving}
-            className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 flex items-center gap-2 min-h-[44px] active:scale-[0.98] active:opacity-80 transition-transform"
+            className="px-4 py-2 bg-amber-500 dark:bg-amber-600 text-white rounded-lg hover:bg-amber-600 dark:hover:bg-amber-700 transition-colors disabled:opacity-50 flex items-center gap-2 min-h-[44px] active:scale-[0.98] active:opacity-80 transition-transform"
             aria-disabled={isArchiving}
           >
             {isArchiving ? (
@@ -303,11 +308,11 @@ export function SessionDetail({
       {session.status !== 'active' &&
         session.status !== 'orphaned' &&
         onDelete && (
-          <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
+          <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200 dark:border-zinc-800">
             <button
               onClick={onDelete}
               disabled={isDeleting}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2 min-h-[44px] active:scale-[0.98] active:opacity-80 transition-transform"
+              className="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition-colors disabled:opacity-50 flex items-center gap-2 min-h-[44px] active:scale-[0.98] active:opacity-80 transition-transform"
               aria-disabled={isDeleting}
             >
               {isDeleting ? (
@@ -341,7 +346,7 @@ export function SessionDetail({
             </button>
 
             {/* Transcript Timeline - nested as a subsection */}
-            <div className="mt-6 sm:mt-8">
+            <div className="mt-3 sm:mt-4">
               <ErrorBoundary>
                 <TranscriptTimeline session={session} />
               </ErrorBoundary>
@@ -351,7 +356,7 @@ export function SessionDetail({
 
       {/* Transcript Timeline (for active/orphaned sessions) */}
       {(session.status === 'active' || session.status === 'orphaned') && (
-        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
+        <div className="mt-3 sm:mt-4">
           <ErrorBoundary>
             <TranscriptTimeline session={session} />
           </ErrorBoundary>
