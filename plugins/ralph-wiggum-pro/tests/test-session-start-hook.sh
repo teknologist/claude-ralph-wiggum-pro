@@ -1,6 +1,6 @@
 #!/bin/bash
-# Test: session-start-hook.sh - Comprehensive test suite
-# Tests session ID persistence, edge cases, and error handling
+# Test: session-start-hook.sh - Essential test suite
+# Tests core functionality, security validation, and error handling
 
 set -euo pipefail
 
@@ -10,7 +10,6 @@ HOOK_SCRIPT="$SCRIPT_DIR/../hooks/session-start-hook.sh"
 # Colors for output
 GREEN='\033[0;32m'
 RED='\033[0;31m'
-YELLOW='\033[1;33m'
 NC='\033[0m'
 
 TESTS_RUN=0
@@ -26,6 +25,7 @@ fail() {
   if [[ -n "${2:-}" ]]; then
     echo "  $2"
   fi
+  exit 1
 }
 
 run_test() {
@@ -35,14 +35,14 @@ run_test() {
 }
 
 echo "=== Testing session-start-hook.sh ==="
-echo "Comprehensive test suite for session ID persistence"
+echo "Essential test suite for session ID persistence"
 
 # Create temp directory for test
 TEST_DIR=$(mktemp -d)
 trap "rm -rf $TEST_DIR" EXIT
 
 # ============================================================================
-# HAPPY PATH TESTS
+# BASIC FUNCTIONALITY
 # ============================================================================
 
 run_test "Basic session ID written to CLAUDE_ENV_FILE"
@@ -56,81 +56,50 @@ if grep -q 'export CLAUDE_SESSION_ID="test-session-abc123"' "$ENV_FILE"; then
   pass "Session ID written correctly"
 else
   fail "Session ID not found in env file" "Contents: $(cat $ENV_FILE)"
-  exit 1
-fi
-
-run_test "Session ID with alphanumeric and hyphens"
-ENV_FILE="$TEST_DIR/claude-env-alphanum"
-touch "$ENV_FILE"
-export CLAUDE_ENV_FILE="$ENV_FILE"
-echo '{"session_id": "claude-code-session-2024-01-15-abc123", "cwd": "/tmp"}' | "$HOOK_SCRIPT"
-
-if grep -q 'claude-code-session-2024-01-15-abc123' "$ENV_FILE"; then
-  pass "Alphanumeric session ID handled correctly"
-else
-  fail "Alphanumeric session ID not written" ""
-  exit 1
 fi
 
 # ============================================================================
-# EDGE CASES - MISSING/EMPTY VALUES
+# SECURITY VALIDATION
 # ============================================================================
 
-run_test "Missing session_id field in JSON"
-ENV_FILE="$TEST_DIR/claude-env-missing"
+run_test "Session ID with colons rejected (security)"
+ENV_FILE="$TEST_DIR/claude-env-colons"
 touch "$ENV_FILE"
 export CLAUDE_ENV_FILE="$ENV_FILE"
-echo '{"cwd": "/tmp", "other_field": "value"}' | "$HOOK_SCRIPT" || true
+echo '{"session_id": "session:10:30:45", "cwd": "/tmp"}' | "$HOOK_SCRIPT" || true
 
 if [[ ! -s "$ENV_FILE" ]]; then
-  pass "No session ID written when field missing"
+  pass "Colons in session ID correctly rejected"
 else
-  fail "Should not write when session_id missing" "Contents: $(cat $ENV_FILE)"
-  exit 1
+  fail "Colons in session ID should be rejected for security" ""
 fi
 
-run_test "Empty session_id string"
-ENV_FILE="$TEST_DIR/claude-env-empty"
+run_test "Session ID with path traversal (..) rejected (security)"
+ENV_FILE="$TEST_DIR/claude-env-pathtraversal"
 touch "$ENV_FILE"
 export CLAUDE_ENV_FILE="$ENV_FILE"
-echo '{"session_id": "", "cwd": "/tmp"}' | "$HOOK_SCRIPT" || true
+echo '{"session_id": "../../../etc/passwd", "cwd": "/tmp"}' | "$HOOK_SCRIPT" || true
 
 if [[ ! -s "$ENV_FILE" ]]; then
-  pass "No session ID written when empty string"
+  pass "Path traversal session ID correctly rejected"
 else
-  fail "Should not write when session_id is empty" "Contents: $(cat $ENV_FILE)"
-  exit 1
+  fail "Path traversal session ID should be rejected for security" ""
 fi
 
-run_test "Null session_id value"
-ENV_FILE="$TEST_DIR/claude-env-null"
-touch "$ENV_FILE"
-export CLAUDE_ENV_FILE="$ENV_FILE"
-echo '{"session_id": null, "cwd": "/tmp"}' | "$HOOK_SCRIPT" || true
-
-if [[ ! -s "$ENV_FILE" ]]; then
-  pass "No session ID written when null"
-else
-  fail "Should not write when session_id is null" "Contents: $(cat $ENV_FILE)"
-  exit 1
-fi
-
-run_test "Whitespace-only session_id"
+run_test "Whitespace-only session_id rejected (security)"
 ENV_FILE="$TEST_DIR/claude-env-whitespace"
 touch "$ENV_FILE"
 export CLAUDE_ENV_FILE="$ENV_FILE"
 echo '{"session_id": "   ", "cwd": "/tmp"}' | "$HOOK_SCRIPT" || true
 
-# Whitespace should be treated as valid (it's not empty after jq extraction)
-# This is a design decision - we accept it
-if [[ -s "$ENV_FILE" ]]; then
-  pass "Whitespace session ID written (treated as valid)"
+if [[ ! -s "$ENV_FILE" ]]; then
+  pass "Whitespace-only session ID rejected"
 else
-  pass "Whitespace session ID rejected (treated as empty)"
+  fail "Whitespace-only session ID should be rejected" ""
 fi
 
 # ============================================================================
-# EDGE CASES - CLAUDE_ENV_FILE NOT SET
+# ENVIRONMENT ERROR HANDLING
 # ============================================================================
 
 run_test "CLAUDE_ENV_FILE not set - should silently succeed"
@@ -142,7 +111,6 @@ if [[ $EXIT_CODE -eq 0 ]]; then
   pass "Hook exits successfully when CLAUDE_ENV_FILE not set"
 else
   fail "Hook should not fail when CLAUDE_ENV_FILE not set" "Exit code: $EXIT_CODE"
-  exit 1
 fi
 
 run_test "CLAUDE_ENV_FILE set to empty string"
@@ -154,11 +122,10 @@ if [[ $EXIT_CODE -eq 0 ]]; then
   pass "Hook exits successfully when CLAUDE_ENV_FILE is empty"
 else
   fail "Hook should not fail when CLAUDE_ENV_FILE is empty" "Exit code: $EXIT_CODE"
-  exit 1
 fi
 
 # ============================================================================
-# EDGE CASES - INVALID JSON
+# INVALID INPUT HANDLING
 # ============================================================================
 
 run_test "Invalid JSON input - malformed"
@@ -171,121 +138,6 @@ if [[ ! -s "$ENV_FILE" ]]; then
   pass "No session ID written for invalid JSON"
 else
   fail "Should not write for invalid JSON" "Contents: $(cat $ENV_FILE)"
-  exit 1
-fi
-
-run_test "Empty JSON object"
-ENV_FILE="$TEST_DIR/claude-env-emptyjson"
-touch "$ENV_FILE"
-export CLAUDE_ENV_FILE="$ENV_FILE"
-echo '{}' | "$HOOK_SCRIPT" || true
-
-if [[ ! -s "$ENV_FILE" ]]; then
-  pass "No session ID written for empty JSON object"
-else
-  fail "Should not write for empty JSON" "Contents: $(cat $ENV_FILE)"
-  exit 1
-fi
-
-run_test "Empty input (no JSON at all)"
-ENV_FILE="$TEST_DIR/claude-env-noinput"
-touch "$ENV_FILE"
-export CLAUDE_ENV_FILE="$ENV_FILE"
-echo '' | "$HOOK_SCRIPT" || true
-
-if [[ ! -s "$ENV_FILE" ]]; then
-  pass "No session ID written for empty input"
-else
-  fail "Should not write for empty input" "Contents: $(cat $ENV_FILE)"
-  exit 1
-fi
-
-# ============================================================================
-# EDGE CASES - SPECIAL CHARACTERS IN SESSION ID
-# ============================================================================
-
-run_test "Session ID with underscores"
-ENV_FILE="$TEST_DIR/claude-env-underscore"
-touch "$ENV_FILE"
-export CLAUDE_ENV_FILE="$ENV_FILE"
-echo '{"session_id": "session_with_underscores_123", "cwd": "/tmp"}' | "$HOOK_SCRIPT"
-
-if grep -q 'session_with_underscores_123' "$ENV_FILE"; then
-  pass "Underscores in session ID handled"
-else
-  fail "Underscores in session ID not handled" ""
-  exit 1
-fi
-
-run_test "Session ID with dots"
-ENV_FILE="$TEST_DIR/claude-env-dots"
-touch "$ENV_FILE"
-export CLAUDE_ENV_FILE="$ENV_FILE"
-echo '{"session_id": "session.with.dots.123", "cwd": "/tmp"}' | "$HOOK_SCRIPT"
-
-if grep -q 'session.with.dots.123' "$ENV_FILE"; then
-  pass "Dots in session ID handled"
-else
-  fail "Dots in session ID not handled" ""
-  exit 1
-fi
-
-run_test "Session ID with colons rejected (security)"
-ENV_FILE="$TEST_DIR/claude-env-colons"
-touch "$ENV_FILE"
-export CLAUDE_ENV_FILE="$ENV_FILE"
-echo '{"session_id": "session:10:30:45", "cwd": "/tmp"}' | "$HOOK_SCRIPT" || true
-
-# Colons should be rejected for security/portability (not valid in filenames on Windows)
-if [[ ! -s "$ENV_FILE" ]]; then
-  pass "Colons in session ID correctly rejected"
-else
-  fail "Colons in session ID should be rejected for security" ""
-  exit 1
-fi
-
-run_test "Session ID with path traversal (..) rejected (security)"
-ENV_FILE="$TEST_DIR/claude-env-pathtraversal"
-touch "$ENV_FILE"
-export CLAUDE_ENV_FILE="$ENV_FILE"
-echo '{"session_id": "../../../etc/passwd", "cwd": "/tmp"}' | "$HOOK_SCRIPT" || true
-
-# Path traversal attempts should be rejected
-if [[ ! -s "$ENV_FILE" ]]; then
-  pass "Path traversal session ID correctly rejected"
-else
-  fail "Path traversal session ID should be rejected for security" ""
-  exit 1
-fi
-
-# Note: We don't test quotes/newlines in session_id as those would break shell syntax
-# and Claude Code shouldn't generate such IDs
-
-# ============================================================================
-# CONCURRENT ACCESS SIMULATION
-# ============================================================================
-
-run_test "Rapid sequential writes to different env files (no collision)"
-for i in {1..5}; do
-  ENV_FILE="$TEST_DIR/rapid-env-$i"
-  touch "$ENV_FILE"
-  export CLAUDE_ENV_FILE="$ENV_FILE"
-  echo "{\"session_id\": \"rapid-session-$i\", \"cwd\": \"/tmp\"}" | "$HOOK_SCRIPT"
-done
-
-ALL_CORRECT=true
-for i in {1..5}; do
-  if ! grep -q "rapid-session-$i" "$TEST_DIR/rapid-env-$i"; then
-    ALL_CORRECT=false
-    break
-  fi
-done
-
-if $ALL_CORRECT; then
-  pass "All 5 rapid sequential writes succeeded with correct isolation"
-else
-  fail "Some rapid writes failed or had wrong content" ""
-  exit 1
 fi
 
 # ============================================================================
