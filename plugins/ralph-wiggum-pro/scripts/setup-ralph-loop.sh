@@ -543,8 +543,5 @@ WARNING: This loop cannot be stopped manually! It will run infinitely
 
 EOF
 
-# Output the initial prompt if provided
-if [[ -n "$PROMPT" ]]; then
-  echo ""
-  echo "$PROMPT"
-fi
+# Prompt is stored in state file and will be fed back by stop hook
+# No need to echo it here - it only causes the agent to repeat it

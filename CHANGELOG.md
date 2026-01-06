@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Premature Completion on First Iteration**: Fixed bug where Ralph loops would terminate immediately on first iteration when prompt contained `<promise>...</promise>` markup
+  - Root cause: `setup-ralph-loop.sh` echoed the prompt to stdout, causing agent to repeat it in response including promise tags, triggering stop-hook completion detection
+  - Fix: Removed prompt echo from setup script - prompt is only stored in state file and fed back by stop hook on subsequent iterations
+
+## [2.2.10] - 2026-01-06
+
 ## [2.2.9] - 2026-01-06
 
 ### Fixed
