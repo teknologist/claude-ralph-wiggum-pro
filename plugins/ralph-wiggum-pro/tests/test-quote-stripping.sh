@@ -38,9 +38,22 @@ echo "Verifies that only surrounding quotes are stripped, internal quotes preser
 
 # Create temp directory for test
 TEST_DIR=$(mktemp -d)
-trap "rm -rf $TEST_DIR" EXIT
+ORIGINAL_HOME="$HOME"
 
+cleanup() {
+  export HOME="$ORIGINAL_HOME"
+  rm -rf "$TEST_DIR"
+}
+trap cleanup EXIT
+
+# Override HOME so scripts use test directory
+export HOME="$TEST_DIR"
 cd "$TEST_DIR"
+
+# Create directory structure matching new global paths
+LOOPS_DIR="$TEST_DIR/.claude/ralph-wiggum-pro/loops"
+LOGS_DIR="$TEST_DIR/.claude/ralph-wiggum-pro/logs"
+mkdir -p "$LOOPS_DIR" "$LOGS_DIR"
 
 # Export a fake session ID to avoid warnings
 export CLAUDE_SESSION_ID="test-session-$RANDOM"
@@ -57,9 +70,9 @@ run_test "--completion-promise with internal double quotes"
 OUTPUT=$("$SETUP_SCRIPT" --completion-promise 'All tests "passing"' "test prompt" 2>&1 | tail -10)
 
 # Check that state file was created
-if [[ -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
+if [[ -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
   # Read the completion_promise from the YAML frontmatter
-  PROMISE=$(grep '^completion_promise:' ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
+  PROMISE=$(grep '^completion_promise:' "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
 
   # PROMISE should be: "All tests \"passing\"" (with surrounding YAML quotes)
   # Extract just the value (strip YAML quotes)
@@ -78,13 +91,13 @@ else
 fi
 
 # Clean up
-rm -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md"
 
 run_test "--completion-promise with internal single quotes"
 OUTPUT=$("$SETUP_SCRIPT" --completion-promise "It's working" "test prompt" 2>&1 | tail -10)
 
-if [[ -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
-  PROMISE=$(grep '^completion_promise:' ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
+if [[ -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
+  PROMISE=$(grep '^completion_promise:' "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
   VALUE=$(echo "$PROMISE" | sed 's/^"//' | sed 's/"$//')
 
   if echo "$VALUE" | grep -q "It's working"; then
@@ -98,13 +111,13 @@ else
   exit 1
 fi
 
-rm -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md"
 
 run_test "--completion-promise with mixed internal quotes"
 OUTPUT=$("$SETUP_SCRIPT" --completion-promise 'Results: "passing" and it'"'"'s fast' "test" 2>&1 | tail -10)
 
-if [[ -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
-  PROMISE=$(grep '^completion_promise:' ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
+if [[ -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
+  PROMISE=$(grep '^completion_promise:' "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
   VALUE=$(echo "$PROMISE" | sed 's/^"//' | sed 's/"$//')
 
   if echo "$VALUE" | grep -q 'Results: "passing" and it'"'"'s fast'; then
@@ -118,13 +131,13 @@ else
   exit 1
 fi
 
-rm -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md"
 
 run_test "--completion-promise with JSON-like string"
 OUTPUT=$("$SETUP_SCRIPT" --completion-promise '{"status": "pass", "tests": 42}' "test" 2>&1 | tail -10)
 
-if [[ -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
-  PROMISE=$(grep '^completion_promise:' ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
+if [[ -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
+  PROMISE=$(grep '^completion_promise:' "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
   VALUE=$(echo "$PROMISE" | sed 's/^"//' | sed 's/"$//')
 
   if echo "$VALUE" | grep -q '\{"status": "pass", "tests": 42\}'; then
@@ -138,7 +151,7 @@ else
   exit 1
 fi
 
-rm -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md"
 
 # ============================================================================
 # SURROUNDING QUOTE TESTS
@@ -147,8 +160,8 @@ rm -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md"
 run_test "Surrounding double quotes stripped"
 OUTPUT=$("$SETUP_SCRIPT" --completion-promise '"DONE"' "test" 2>&1 | tail -10)
 
-if [[ -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
-  PROMISE=$(grep '^completion_promise:' ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
+if [[ -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
+  PROMISE=$(grep '^completion_promise:' "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
   VALUE=$(echo "$PROMISE" | sed 's/^"//' | sed 's/"$//')
 
   # Should be DONE (surrounding quotes removed)
@@ -163,13 +176,13 @@ else
   exit 1
 fi
 
-rm -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md"
 
 run_test "Surrounding single quotes stripped"
 OUTPUT=$("$SETUP_SCRIPT" --completion-promise "'Complete'" "test" 2>&1 | tail -10)
 
-if [[ -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
-  PROMISE=$(grep '^completion_promise:' ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
+if [[ -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
+  PROMISE=$(grep '^completion_promise:' "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
   VALUE=$(echo "$PROMISE" | sed 's/^"//' | sed 's/"$//')
 
   if [[ "$VALUE" == "Complete" ]]; then
@@ -183,13 +196,13 @@ else
   exit 1
 fi
 
-rm -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md"
 
 run_test "Double nested quotes (surrounding + internal)"
 OUTPUT=$("$SETUP_SCRIPT" --completion-promise '"Test "passing" complete"' "test" 2>&1 | tail -10)
 
-if [[ -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
-  PROMISE=$(grep '^completion_promise:' ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
+if [[ -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
+  PROMISE=$(grep '^completion_promise:' "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
   VALUE=$(echo "$PROMISE" | sed 's/^"//' | sed 's/"$//')
 
   # Should be: Test "passing" complete (outer quotes stripped, inner kept)
@@ -204,7 +217,7 @@ else
   exit 1
 fi
 
-rm -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md"
 
 # ============================================================================
 # EDGE CASE: Multi-line promises with quotes
@@ -214,8 +227,8 @@ run_test "Multi-line option with internal quotes"
 # Test --completion-promise=VALUE format
 OUTPUT=$("$SETUP_SCRIPT" --completion-promise='Multi word "test" promise' "test" 2>&1 | tail -10)
 
-if [[ -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
-  PROMISE=$(grep '^completion_promise:' ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
+if [[ -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" ]]; then
+  PROMISE=$(grep '^completion_promise:' "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md" | sed 's/completion_promise: *//')
   VALUE=$(echo "$PROMISE" | sed 's/^"//' | sed 's/"$//')
 
   if echo "$VALUE" | grep -q 'Multi word "test" promise'; then
@@ -229,7 +242,7 @@ else
   exit 1
 fi
 
-rm -f ".claude/ralph-loop.$CLAUDE_SESSION_ID.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.$CLAUDE_SESSION_ID.local.md"
 
 # ============================================================================
 # SUMMARY

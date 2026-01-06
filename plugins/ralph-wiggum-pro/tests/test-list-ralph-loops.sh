@@ -36,9 +36,9 @@ run_test() {
 # The list script extracted from the markdown command
 # This is the core logic we're testing
 # Uses find to avoid shell glob expansion errors in zsh when no files match
+# Updated to use global loops directory structure
 run_list_script() {
-  local dir="$1"
-  cd "$dir"
+  local loops_dir="$1"
 
   found=0
   # Use find to avoid shell glob expansion errors when no files exist
@@ -81,7 +81,7 @@ run_list_script() {
       echo "FILE=$f"
       echo "---"
     fi
-  done < <(find .claude -maxdepth 1 -name 'ralph-loop.*.local.md' 2>/dev/null)
+  done < <(find "$loops_dir" -maxdepth 1 -name 'ralph-loop.*.local.md' 2>/dev/null)
   if [[ $found -eq 0 ]]; then
     echo "NO_LOOPS_FOUND"
   fi
@@ -99,8 +99,8 @@ trap "rm -rf $TEST_DIR" EXIT
 # ============================================================================
 
 run_test "No loops found - empty .claude directory"
-mkdir -p "$TEST_DIR/project1/.claude"
-OUTPUT=$(run_list_script "$TEST_DIR/project1")
+mkdir -p "$TEST_DIR/loops1"
+OUTPUT=$(run_list_script "$TEST_DIR/loops1")
 
 if [[ "$OUTPUT" == "NO_LOOPS_FOUND" ]]; then
   pass "Reports no loops when directory is empty"
@@ -109,9 +109,9 @@ else
   exit 1
 fi
 
-run_test "No loops found - no .claude directory"
+run_test "No loops found - loops directory doesn't exist"
 mkdir -p "$TEST_DIR/project2"
-OUTPUT=$(run_list_script "$TEST_DIR/project2")
+OUTPUT=$(run_list_script "$TEST_DIR/loops2")
 
 if [[ "$OUTPUT" == "NO_LOOPS_FOUND" ]]; then
   pass "Reports no loops when .claude doesn't exist"
@@ -124,11 +124,11 @@ run_test "No loops found - .claude exists but no matching files (zsh glob safety
 # This test specifically validates the fix for zsh glob expansion errors
 # In zsh, `for f in pattern` throws "no matches found" if pattern doesn't match
 # The find-based approach should handle this gracefully
-mkdir -p "$TEST_DIR/project2b/.claude"
+mkdir -p "$TEST_DIR/loops2b"
 # Add some non-matching files to ensure glob pattern specificity
-touch "$TEST_DIR/project2b/.claude/settings.json"
-touch "$TEST_DIR/project2b/.claude/other-file.md"
-OUTPUT=$(run_list_script "$TEST_DIR/project2b" 2>&1)
+touch "$TEST_DIR/loops2b/settings.json"
+touch "$TEST_DIR/loops2b/other-file.md"
+OUTPUT=$(run_list_script "$TEST_DIR/loops2b" 2>&1)
 
 if [[ "$OUTPUT" == "NO_LOOPS_FOUND" ]]; then
   pass "No glob expansion error when no loops match"
@@ -142,9 +142,9 @@ else
 fi
 
 run_test "Single loop found with all fields"
-mkdir -p "$TEST_DIR/project3/.claude"
+mkdir -p "$TEST_DIR/loops3"
 STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-cat > "$TEST_DIR/project3/.claude/ralph-loop.session-abc123.local.md" <<EOF
+cat > "$TEST_DIR/loops3/ralph-loop.session-abc123.local.md" <<EOF
 ---
 active: true
 session_id: "session-abc123"
@@ -157,7 +157,7 @@ started_at: "$STARTED_AT"
 Build a REST API for user management.
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project3")
+OUTPUT=$(run_list_script "$TEST_DIR/loops3")
 
 if echo "$OUTPUT" | grep -q "LOOP_FOUND" && \
    echo "$OUTPUT" | grep -q "SESSION=session-abc123" && \
@@ -171,9 +171,9 @@ else
 fi
 
 run_test "Multiple loops found"
-mkdir -p "$TEST_DIR/project4/.claude"
+mkdir -p "$TEST_DIR/loops4"
 
-cat > "$TEST_DIR/project4/.claude/ralph-loop.session-aaa.local.md" <<EOF
+cat > "$TEST_DIR/loops4/ralph-loop.session-aaa.local.md" <<EOF
 ---
 active: true
 session_id: "session-aaa"
@@ -184,7 +184,7 @@ started_at: "2024-01-15T10:00:00Z"
 ---
 EOF
 
-cat > "$TEST_DIR/project4/.claude/ralph-loop.session-bbb.local.md" <<EOF
+cat > "$TEST_DIR/loops4/ralph-loop.session-bbb.local.md" <<EOF
 ---
 active: true
 session_id: "session-bbb"
@@ -195,7 +195,7 @@ started_at: "2024-01-15T11:00:00Z"
 ---
 EOF
 
-cat > "$TEST_DIR/project4/.claude/ralph-loop.session-ccc.local.md" <<EOF
+cat > "$TEST_DIR/loops4/ralph-loop.session-ccc.local.md" <<EOF
 ---
 active: true
 session_id: "session-ccc"
@@ -206,7 +206,7 @@ started_at: "2024-01-15T12:00:00Z"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project4")
+OUTPUT=$(run_list_script "$TEST_DIR/loops4")
 LOOP_COUNT=$(echo "$OUTPUT" | grep -c "LOOP_FOUND" || true)
 
 if [[ "$LOOP_COUNT" -eq 3 ]]; then
@@ -217,8 +217,8 @@ else
 fi
 
 run_test "Session ID extraction from filename"
-mkdir -p "$TEST_DIR/project5/.claude"
-cat > "$TEST_DIR/project5/.claude/ralph-loop.my-unique-session-id-12345.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops5"
+cat > "$TEST_DIR/loops5/ralph-loop.my-unique-session-id-12345.local.md" <<EOF
 ---
 active: true
 session_id: "my-unique-session-id-12345"
@@ -229,7 +229,7 @@ started_at: "2024-01-15T10:00:00Z"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project5")
+OUTPUT=$(run_list_script "$TEST_DIR/loops5")
 
 if echo "$OUTPUT" | grep -q "SESSION=my-unique-session-id-12345"; then
   pass "Session ID extracted correctly from filename"
@@ -243,10 +243,10 @@ fi
 # ============================================================================
 
 run_test "Elapsed time - just started (0 minutes)"
-mkdir -p "$TEST_DIR/project6/.claude"
+mkdir -p "$TEST_DIR/loops6"
 # Use local time to match how the script parses (date -j treats input as local time)
 NOW=$(date +%Y-%m-%dT%H:%M:%SZ)
-cat > "$TEST_DIR/project6/.claude/ralph-loop.session-new.local.md" <<EOF
+cat > "$TEST_DIR/loops6/ralph-loop.session-new.local.md" <<EOF
 ---
 active: true
 session_id: "session-new"
@@ -257,7 +257,7 @@ started_at: "$NOW"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project6")
+OUTPUT=$(run_list_script "$TEST_DIR/loops6")
 
 if echo "$OUTPUT" | grep -q "ELAPSED=0m"; then
   pass "Elapsed time shows 0m for just-started loop"
@@ -267,7 +267,7 @@ else
 fi
 
 run_test "Elapsed time - hours and minutes format"
-mkdir -p "$TEST_DIR/project7/.claude"
+mkdir -p "$TEST_DIR/loops7"
 # Calculate 2h30m ago using epoch seconds (portable across macOS/Linux)
 PAST_EPOCH=$(($(date +%s) - 2*3600 - 30*60))
 if [[ "$(uname)" == "Darwin" ]]; then
@@ -275,7 +275,7 @@ if [[ "$(uname)" == "Darwin" ]]; then
 else
   PAST=$(date -d "@$PAST_EPOCH" +%Y-%m-%dT%H:%M:%SZ)
 fi
-cat > "$TEST_DIR/project7/.claude/ralph-loop.session-old.local.md" <<EOF
+cat > "$TEST_DIR/loops7/ralph-loop.session-old.local.md" <<EOF
 ---
 active: true
 session_id: "session-old"
@@ -286,7 +286,7 @@ started_at: "$PAST"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project7")
+OUTPUT=$(run_list_script "$TEST_DIR/loops7")
 
 if echo "$OUTPUT" | grep -qE "ELAPSED=2h [0-9]+m"; then
   pass "Elapsed time shows hours and minutes"
@@ -296,8 +296,8 @@ else
 fi
 
 run_test "Elapsed time - unknown when started_at missing"
-mkdir -p "$TEST_DIR/project8/.claude"
-cat > "$TEST_DIR/project8/.claude/ralph-loop.session-notime.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops8"
+cat > "$TEST_DIR/loops8/ralph-loop.session-notime.local.md" <<EOF
 ---
 active: true
 session_id: "session-notime"
@@ -307,7 +307,7 @@ max_iterations: 10
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project8")
+OUTPUT=$(run_list_script "$TEST_DIR/loops8")
 
 if echo "$OUTPUT" | grep -q "ELAPSED=unknown"; then
   pass "Elapsed time shows unknown when started_at missing"
@@ -321,8 +321,8 @@ fi
 # ============================================================================
 
 run_test "Missing description field"
-mkdir -p "$TEST_DIR/project9/.claude"
-cat > "$TEST_DIR/project9/.claude/ralph-loop.session-nodesc.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops9"
+cat > "$TEST_DIR/loops9/ralph-loop.session-nodesc.local.md" <<EOF
 ---
 active: true
 session_id: "session-nodesc"
@@ -332,7 +332,7 @@ started_at: "2024-01-15T10:00:00Z"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project9")
+OUTPUT=$(run_list_script "$TEST_DIR/loops9")
 
 if echo "$OUTPUT" | grep -q "DESC=No description"; then
   pass "Default description when field missing"
@@ -342,8 +342,8 @@ else
 fi
 
 run_test "Missing iteration field"
-mkdir -p "$TEST_DIR/project10/.claude"
-cat > "$TEST_DIR/project10/.claude/ralph-loop.session-noiter.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops10"
+cat > "$TEST_DIR/loops10/ralph-loop.session-noiter.local.md" <<EOF
 ---
 active: true
 session_id: "session-noiter"
@@ -353,7 +353,7 @@ started_at: "2024-01-15T10:00:00Z"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project10")
+OUTPUT=$(run_list_script "$TEST_DIR/loops10")
 
 if echo "$OUTPUT" | grep -q "ITER=?"; then
   pass "Shows ? when iteration missing"
@@ -363,8 +363,8 @@ else
 fi
 
 run_test "Missing max_iterations field"
-mkdir -p "$TEST_DIR/project11/.claude"
-cat > "$TEST_DIR/project11/.claude/ralph-loop.session-nomax.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops11"
+cat > "$TEST_DIR/loops11/ralph-loop.session-nomax.local.md" <<EOF
 ---
 active: true
 session_id: "session-nomax"
@@ -374,7 +374,7 @@ started_at: "2024-01-15T10:00:00Z"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project11")
+OUTPUT=$(run_list_script "$TEST_DIR/loops11")
 
 if echo "$OUTPUT" | grep -q "MAX=0"; then
   pass "Defaults to 0 (unlimited) when max_iterations missing"
@@ -388,8 +388,8 @@ fi
 # ============================================================================
 
 run_test "Description with special characters"
-mkdir -p "$TEST_DIR/project12/.claude"
-cat > "$TEST_DIR/project12/.claude/ralph-loop.session-special.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops12"
+cat > "$TEST_DIR/loops12/ralph-loop.session-special.local.md" <<EOF
 ---
 active: true
 session_id: "session-special"
@@ -400,7 +400,7 @@ started_at: "2024-01-15T10:00:00Z"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project12")
+OUTPUT=$(run_list_script "$TEST_DIR/loops12")
 
 if echo "$OUTPUT" | grep -q "DESC=Build API & fix bugs (v2.0)"; then
   pass "Special characters in description preserved"
@@ -410,8 +410,8 @@ else
 fi
 
 run_test "Description with colons"
-mkdir -p "$TEST_DIR/project13/.claude"
-cat > "$TEST_DIR/project13/.claude/ralph-loop.session-colon.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops13"
+cat > "$TEST_DIR/loops13/ralph-loop.session-colon.local.md" <<EOF
 ---
 active: true
 session_id: "session-colon"
@@ -422,7 +422,7 @@ started_at: "2024-01-15T10:00:00Z"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project13")
+OUTPUT=$(run_list_script "$TEST_DIR/loops13")
 
 if echo "$OUTPUT" | grep -q "DESC=Fix: memory leak in API"; then
   pass "Colons in description handled"
@@ -432,8 +432,8 @@ else
 fi
 
 run_test "Description with quotes stripped"
-mkdir -p "$TEST_DIR/project14/.claude"
-cat > "$TEST_DIR/project14/.claude/ralph-loop.session-quoted.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops14"
+cat > "$TEST_DIR/loops14/ralph-loop.session-quoted.local.md" <<EOF
 ---
 active: true
 session_id: "session-quoted"
@@ -444,7 +444,7 @@ started_at: "2024-01-15T10:00:00Z"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project14")
+OUTPUT=$(run_list_script "$TEST_DIR/loops14")
 
 if echo "$OUTPUT" | grep -q "DESC=Quoted description here"; then
   pass "Quotes stripped from description"
@@ -458,8 +458,8 @@ fi
 # ============================================================================
 
 run_test "Iteration 0 (just started)"
-mkdir -p "$TEST_DIR/project15/.claude"
-cat > "$TEST_DIR/project15/.claude/ralph-loop.session-zero.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops15"
+cat > "$TEST_DIR/loops15/ralph-loop.session-zero.local.md" <<EOF
 ---
 active: true
 session_id: "session-zero"
@@ -470,7 +470,7 @@ started_at: "2024-01-15T10:00:00Z"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project15")
+OUTPUT=$(run_list_script "$TEST_DIR/loops15")
 
 if echo "$OUTPUT" | grep -q "ITER=0"; then
   pass "Iteration 0 reported correctly"
@@ -480,8 +480,8 @@ else
 fi
 
 run_test "Max iterations 0 (unlimited)"
-mkdir -p "$TEST_DIR/project16/.claude"
-cat > "$TEST_DIR/project16/.claude/ralph-loop.session-unlimited.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops16"
+cat > "$TEST_DIR/loops16/ralph-loop.session-unlimited.local.md" <<EOF
 ---
 active: true
 session_id: "session-unlimited"
@@ -492,7 +492,7 @@ started_at: "2024-01-15T10:00:00Z"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project16")
+OUTPUT=$(run_list_script "$TEST_DIR/loops16")
 
 if echo "$OUTPUT" | grep -q "MAX=0"; then
   pass "Unlimited (0) max iterations reported"
@@ -502,8 +502,8 @@ else
 fi
 
 run_test "Large iteration count"
-mkdir -p "$TEST_DIR/project17/.claude"
-cat > "$TEST_DIR/project17/.claude/ralph-loop.session-large.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops17"
+cat > "$TEST_DIR/loops17/ralph-loop.session-large.local.md" <<EOF
 ---
 active: true
 session_id: "session-large"
@@ -514,7 +514,7 @@ started_at: "2024-01-15T10:00:00Z"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project17")
+OUTPUT=$(run_list_script "$TEST_DIR/loops17")
 
 if echo "$OUTPUT" | grep -q "ITER=9999" && echo "$OUTPUT" | grep -q "MAX=10000"; then
   pass "Large iteration counts handled"
@@ -528,8 +528,8 @@ fi
 # ============================================================================
 
 run_test "File path included in output"
-mkdir -p "$TEST_DIR/project18/.claude"
-cat > "$TEST_DIR/project18/.claude/ralph-loop.session-path.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops18"
+cat > "$TEST_DIR/loops18/ralph-loop.session-path.local.md" <<EOF
 ---
 active: true
 session_id: "session-path"
@@ -540,9 +540,9 @@ started_at: "2024-01-15T10:00:00Z"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project18")
+OUTPUT=$(run_list_script "$TEST_DIR/loops18")
 
-if echo "$OUTPUT" | grep -q "FILE=.claude/ralph-loop.session-path.local.md"; then
+if echo "$OUTPUT" | grep -q "FILE=.*ralph-loop.session-path.local.md"; then
   pass "File path included in output"
 else
   fail "File path not in output" "Got: $OUTPUT"
@@ -554,10 +554,10 @@ fi
 # ============================================================================
 
 run_test "Empty state file"
-mkdir -p "$TEST_DIR/project19/.claude"
-touch "$TEST_DIR/project19/.claude/ralph-loop.session-empty.local.md"
+mkdir -p "$TEST_DIR/loops19"
+touch "$TEST_DIR/loops19/ralph-loop.session-empty.local.md"
 
-OUTPUT=$(run_list_script "$TEST_DIR/project19")
+OUTPUT=$(run_list_script "$TEST_DIR/loops19")
 
 if echo "$OUTPUT" | grep -q "LOOP_FOUND"; then
   if echo "$OUTPUT" | grep -q "SESSION=session-empty" && \
@@ -574,13 +574,13 @@ else
 fi
 
 run_test "State file with only prompt (no frontmatter)"
-mkdir -p "$TEST_DIR/project20/.claude"
-cat > "$TEST_DIR/project20/.claude/ralph-loop.session-nofrontmatter.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops20"
+cat > "$TEST_DIR/loops20/ralph-loop.session-nofrontmatter.local.md" <<EOF
 This is just a prompt without any YAML frontmatter.
 Build something cool.
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project20")
+OUTPUT=$(run_list_script "$TEST_DIR/loops20")
 
 if echo "$OUTPUT" | grep -q "LOOP_FOUND" && \
    echo "$OUTPUT" | grep -q "SESSION=session-nofrontmatter"; then
@@ -591,15 +591,15 @@ else
 fi
 
 run_test "State file with malformed YAML"
-mkdir -p "$TEST_DIR/project21/.claude"
-cat > "$TEST_DIR/project21/.claude/ralph-loop.session-badfrontmatter.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops21"
+cat > "$TEST_DIR/loops21/ralph-loop.session-badfrontmatter.local.md" <<EOF
 ---
 this is not: valid: yaml: at: all
 iteration: [broken
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project21")
+OUTPUT=$(run_list_script "$TEST_DIR/loops21")
 
 if echo "$OUTPUT" | grep -q "LOOP_FOUND" && \
    echo "$OUTPUT" | grep -q "SESSION=session-badfrontmatter"; then
@@ -614,8 +614,8 @@ fi
 # ============================================================================
 
 run_test "UUID session ID"
-mkdir -p "$TEST_DIR/project22/.claude"
-cat > "$TEST_DIR/project22/.claude/ralph-loop.550e8400-e29b-41d4-a716-446655440000.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops22"
+cat > "$TEST_DIR/loops22/ralph-loop.550e8400-e29b-41d4-a716-446655440000.local.md" <<EOF
 ---
 active: true
 session_id: "550e8400-e29b-41d4-a716-446655440000"
@@ -626,7 +626,7 @@ started_at: "2024-01-15T10:00:00Z"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project22")
+OUTPUT=$(run_list_script "$TEST_DIR/loops22")
 
 if echo "$OUTPUT" | grep -q "SESSION=550e8400-e29b-41d4-a716-446655440000"; then
   pass "UUID session ID extracted correctly"
@@ -640,13 +640,13 @@ fi
 # ============================================================================
 
 run_test "Non-ralph files in .claude directory ignored"
-mkdir -p "$TEST_DIR/project23/.claude"
+mkdir -p "$TEST_DIR/loops23"
 # Create various non-ralph files
-touch "$TEST_DIR/project23/.claude/settings.json"
-echo "some content" > "$TEST_DIR/project23/.claude/notes.md"
-touch "$TEST_DIR/project23/.claude/ralph-loop.local.md.backup"
+touch "$TEST_DIR/loops23/settings.json"
+echo "some content" > "$TEST_DIR/loops23/notes.md"
+touch "$TEST_DIR/loops23/ralph-loop.local.md.backup"
 
-OUTPUT=$(run_list_script "$TEST_DIR/project23")
+OUTPUT=$(run_list_script "$TEST_DIR/loops23")
 
 if [[ "$OUTPUT" == "NO_LOOPS_FOUND" ]]; then
   pass "Non-ralph files correctly ignored"
@@ -656,20 +656,20 @@ else
 fi
 
 run_test "Only .local.md files matched"
-mkdir -p "$TEST_DIR/project24/.claude"
+mkdir -p "$TEST_DIR/loops24"
 # Create similarly named but not matching files
-cat > "$TEST_DIR/project24/.claude/ralph-loop.session123.md" <<EOF
+cat > "$TEST_DIR/loops24/ralph-loop.session123.md" <<EOF
 ---
 description: "Should be ignored"
 ---
 EOF
-cat > "$TEST_DIR/project24/.claude/ralph-loop.session456.local.txt" <<EOF
+cat > "$TEST_DIR/loops24/ralph-loop.session456.local.txt" <<EOF
 ---
 description: "Should also be ignored"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project24")
+OUTPUT=$(run_list_script "$TEST_DIR/loops24")
 
 if [[ "$OUTPUT" == "NO_LOOPS_FOUND" ]]; then
   pass "Only .local.md extension matched"
@@ -683,8 +683,8 @@ fi
 # ============================================================================
 
 run_test "Output has correct separator between loops"
-mkdir -p "$TEST_DIR/project25/.claude"
-cat > "$TEST_DIR/project25/.claude/ralph-loop.session-x.local.md" <<EOF
+mkdir -p "$TEST_DIR/loops25"
+cat > "$TEST_DIR/loops25/ralph-loop.session-x.local.md" <<EOF
 ---
 description: "X"
 iteration: 1
@@ -692,7 +692,7 @@ max_iterations: 10
 started_at: "2024-01-15T10:00:00Z"
 ---
 EOF
-cat > "$TEST_DIR/project25/.claude/ralph-loop.session-y.local.md" <<EOF
+cat > "$TEST_DIR/loops25/ralph-loop.session-y.local.md" <<EOF
 ---
 description: "Y"
 iteration: 2
@@ -701,7 +701,7 @@ started_at: "2024-01-15T11:00:00Z"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project25")
+OUTPUT=$(run_list_script "$TEST_DIR/loops25")
 SEPARATOR_COUNT=$(echo "$OUTPUT" | grep -c "^---$" || true)
 
 if [[ "$SEPARATOR_COUNT" -eq 2 ]]; then
@@ -712,9 +712,9 @@ else
 fi
 
 run_test "All required fields present in output"
-mkdir -p "$TEST_DIR/project26/.claude"
+mkdir -p "$TEST_DIR/loops26"
 NOW=$(date +%Y-%m-%dT%H:%M:%SZ)
-cat > "$TEST_DIR/project26/.claude/ralph-loop.session-complete.local.md" <<EOF
+cat > "$TEST_DIR/loops26/ralph-loop.session-complete.local.md" <<EOF
 ---
 active: true
 session_id: "session-complete"
@@ -725,7 +725,7 @@ started_at: "$NOW"
 ---
 EOF
 
-OUTPUT=$(run_list_script "$TEST_DIR/project26")
+OUTPUT=$(run_list_script "$TEST_DIR/loops26")
 
 if echo "$OUTPUT" | grep -q "LOOP_FOUND" && \
    echo "$OUTPUT" | grep -q "SESSION=" && \

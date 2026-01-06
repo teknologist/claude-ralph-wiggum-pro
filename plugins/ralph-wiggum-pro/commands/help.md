@@ -48,7 +48,7 @@ Start a Ralph loop in your current session.
 **Critical**: Your prompt MUST include instructions to output `<promise>KEYWORD</promise>` when done. The `--completion-promise` specifies what KEYWORD to look for inside those tags.
 
 **How it works:**
-1. Creates `.claude/.ralph-loop.local.md` state file
+1. Creates state file at `~/.claude/ralph-wiggum-pro/loops/ralph-loop.{session_id}.local.md`
 2. You work on the task
 3. When you try to exit, stop hook intercepts
 4. If `<promise>KEYWORD</promise>` found → loop ends
@@ -68,9 +68,9 @@ Cancel an active Ralph loop (removes the loop state file).
 ```
 
 **How it works:**
-- Checks for active loop state file
+- Checks for active loop state file at `~/.claude/ralph-wiggum-pro/loops/`
 - Logs the cancellation to session history
-- Removes `.claude/.ralph-loop.local.md`
+- Removes the state file
 - Reports cancellation with iteration count
 
 ---
@@ -102,7 +102,7 @@ View historical Ralph loop session data.
 - Outcome (success/max/cancel/error)
 - Start and end timestamps
 
-**Log location:** `~/.claude/ralph-wiggum-pro-logs/sessions.jsonl`
+**Log location:** `~/.claude/ralph-wiggum-pro/logs/sessions.jsonl`
 
 ---
 

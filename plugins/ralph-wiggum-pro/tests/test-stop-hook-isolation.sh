@@ -39,10 +39,21 @@ echo "Comprehensive test suite for Ralph loop stop hook"
 
 # Create temp directory for test
 TEST_DIR=$(mktemp -d)
-trap "rm -rf $TEST_DIR" EXIT
+ORIGINAL_HOME="$HOME"
 
-# Create .claude directory
-mkdir -p "$TEST_DIR/.claude"
+cleanup() {
+  export HOME="$ORIGINAL_HOME"
+  rm -rf "$TEST_DIR"
+}
+trap cleanup EXIT
+
+# Override HOME so scripts look in test directory
+export HOME="$TEST_DIR"
+
+# Create directory structure matching new global paths
+LOOPS_DIR="$TEST_DIR/.claude/ralph-wiggum-pro/loops"
+LOGS_DIR="$TEST_DIR/.claude/ralph-wiggum-pro/logs"
+mkdir -p "$LOOPS_DIR" "$LOGS_DIR"
 cd "$TEST_DIR"
 
 # Create a mock transcript file (JSONL format)
@@ -62,7 +73,7 @@ create_state_file() {
   local completion_promise="${4:-DONE}"
   local started_at="${5:-2024-01-15T10:00:00Z}"
 
-  cat > "$TEST_DIR/.claude/ralph-loop.${session_id}.local.md" <<EOF
+  cat > "$LOOPS_DIR/ralph-loop.${session_id}.local.md" <<EOF
 ---
 active: true
 session_id: "$session_id"
@@ -116,7 +127,7 @@ else
   fail "Should block exit for active loop" "Result: $RESULT"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION_A}.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION_A}.local.md"
 
 run_test "Different session → allows exit (session isolation)"
 SESSION_A="session-owner"
@@ -137,7 +148,7 @@ else
   fail "Session B should not be blocked by Session A's loop" "Result: $RESULT"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION_A}.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION_A}.local.md"
 
 run_test "Multiple independent loops - each session blocked by own loop"
 SESSION_A="session-alpha"
@@ -169,7 +180,7 @@ else
   fail "Each session should be blocked by its own loop"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.session-*.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.session-*.local.md"
 
 # ============================================================================
 # ITERATION COUNTER TESTS
@@ -183,14 +194,14 @@ create_transcript
 HOOK_INPUT=$(jq -n --arg sid "$SESSION" --arg tp "$TEST_DIR/transcript.jsonl" '{session_id: $sid, transcript_path: $tp, cwd: "."}')
 echo "$HOOK_INPUT" | "$HOOK_SCRIPT" > /dev/null 2>&1
 
-ITER=$(grep '^iteration:' "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md" | sed 's/iteration: *//')
+ITER=$(grep '^iteration:' "$LOOPS_DIR/ralph-loop.${SESSION}.local.md" | sed 's/iteration: *//')
 if [[ "$ITER" -eq 6 ]]; then
   pass "Iteration incremented from 5 to 6"
 else
   fail "Iteration should be 6, got $ITER"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md"
 
 run_test "Iteration starts from 1 and increments correctly"
 SESSION="session-iter-start"
@@ -204,14 +215,14 @@ for i in 1 2 3; do
   echo "$HOOK_INPUT" | "$HOOK_SCRIPT" > /dev/null 2>&1
 done
 
-ITER=$(grep '^iteration:' "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md" | sed 's/iteration: *//')
+ITER=$(grep '^iteration:' "$LOOPS_DIR/ralph-loop.${SESSION}.local.md" | sed 's/iteration: *//')
 if [[ "$ITER" -eq 4 ]]; then
   pass "After 3 iterations, counter is 4"
 else
   fail "After 3 iterations, counter should be 4, got $ITER"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md"
 
 # ============================================================================
 # MAX ITERATIONS TERMINATION TESTS
@@ -234,7 +245,7 @@ else
 fi
 
 # State file should be deleted
-if [[ ! -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md" ]]; then
+if [[ ! -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md" ]]; then
   pass "State file deleted after max iterations"
 else
   fail "State file should be deleted"
@@ -255,7 +266,7 @@ else
   fail "Should still block before max" "Result: $RESULT"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md"
 
 run_test "max_iterations 0 means unlimited (never stops on count)"
 SESSION="session-unlimited"
@@ -271,7 +282,7 @@ else
   fail "Should block with unlimited iterations" "Result: $RESULT"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md"
 
 # ============================================================================
 # COMPLETION PROMISE DETECTION TESTS
@@ -296,7 +307,7 @@ else
   exit 1
 fi
 
-if [[ ! -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md" ]]; then
+if [[ ! -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md" ]]; then
   pass "State file deleted after promise detected"
 else
   fail "State file should be deleted"
@@ -321,7 +332,7 @@ else
   fail "Should block without proper tags" "Result: $RESULT"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md"
 
 run_test "Wrong promise text in tags → still blocks"
 SESSION="session-wrong-promise"
@@ -340,12 +351,12 @@ else
   fail "Should block with wrong promise" "Result: $RESULT"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md"
 
 run_test "No completion promise set (null) → runs until max iterations"
 SESSION="session-no-promise"
 # Create state file with null promise
-cat > "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md" <<EOF
+cat > "$LOOPS_DIR/ralph-loop.${SESSION}.local.md" <<EOF
 ---
 active: true
 session_id: "$SESSION"
@@ -373,7 +384,7 @@ else
   fail "Should block when no promise is configured" "Result: $RESULT"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md"
 
 run_test "Promise with special characters matches exactly"
 SESSION="session-special-promise"
@@ -499,7 +510,7 @@ fi
 
 run_test "Corrupted iteration (non-numeric) → stops loop gracefully"
 SESSION="session-corrupt-iter"
-cat > "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md" <<EOF
+cat > "$LOOPS_DIR/ralph-loop.${SESSION}.local.md" <<EOF
 ---
 active: true
 session_id: "$SESSION"
@@ -527,7 +538,7 @@ fi
 
 run_test "Corrupted max_iterations (non-numeric) → stops loop gracefully"
 SESSION="session-corrupt-max"
-cat > "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md" <<EOF
+cat > "$LOOPS_DIR/ralph-loop.${SESSION}.local.md" <<EOF
 ---
 active: true
 session_id: "$SESSION"
@@ -554,7 +565,7 @@ fi
 
 run_test "Missing prompt in state file → stops loop gracefully"
 SESSION="session-no-prompt"
-cat > "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md" <<EOF
+cat > "$LOOPS_DIR/ralph-loop.${SESSION}.local.md" <<EOF
 ---
 active: true
 session_id: "$SESSION"
@@ -595,7 +606,7 @@ else
   fail "Should allow exit without session_id" "Result: $RESULT"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md"
 
 run_test "Empty session_id in hook input → allows exit"
 create_transcript
@@ -624,7 +635,7 @@ else
   fail "Should handle missing transcript" "Result: $RESULT"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md" 2>/dev/null || true
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md" 2>/dev/null || true
 
 run_test "Non-existent transcript file → stops loop gracefully"
 SESSION="session-bad-transcript"
@@ -686,7 +697,7 @@ fi
 
 run_test "Prompt containing --- separators is preserved"
 SESSION="session-separator"
-cat > "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md" <<'EOF'
+cat > "$LOOPS_DIR/ralph-loop.${SESSION}.local.md" <<'EOF'
 ---
 active: true
 session_id: "session-separator"
@@ -721,7 +732,7 @@ else
   fail "Should preserve prompt with separators" "Result: $RESULT"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md"
 
 # ============================================================================
 # SYSTEM MESSAGE CONTENT TESTS
@@ -741,7 +752,7 @@ else
   fail "System message should show iteration count" "Result: $RESULT"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md"
 
 run_test "System message includes completion promise info"
 SESSION="session-promise-msg"
@@ -757,7 +768,7 @@ else
   fail "System message should show promise" "Result: $RESULT"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md"
 
 # ============================================================================
 # JSON OUTPUT FORMAT TESTS
@@ -780,7 +791,7 @@ else
   fail "Block response should be valid JSON with required fields" "Result: $RESULT"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md"
 
 # ============================================================================
 # SESSION ID SECURITY VALIDATION TESTS
@@ -857,7 +868,7 @@ else
   fail "Should accept valid session ID" "Result: $RESULT"
   exit 1
 fi
-rm -f "$TEST_DIR/.claude/ralph-loop.${SESSION}.local.md"
+rm -f "$LOOPS_DIR/ralph-loop.${SESSION}.local.md"
 
 # ============================================================================
 # SUMMARY

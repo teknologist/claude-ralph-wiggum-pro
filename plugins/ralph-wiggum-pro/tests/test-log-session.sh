@@ -78,9 +78,11 @@ run_test "Missing state file rejected" "fail" "$LOG_SCRIPT /tmp/nonexistent.md s
 echo ""
 echo "Testing: Valid state file creates log entry..."
 
-# Create a test state file
-mkdir -p "$TEST_DIR/.claude"
-TEST_STATE_FILE="$TEST_DIR/.claude/ralph-loop.test-session.local.md"
+# Create a test state file in the new global directory structure
+LOOPS_DIR="$TEST_DIR/.claude/ralph-wiggum-pro/loops"
+LOGS_DIR="$TEST_DIR/.claude/ralph-wiggum-pro/logs"
+mkdir -p "$LOOPS_DIR" "$LOGS_DIR"
+TEST_STATE_FILE="$LOOPS_DIR/ralph-loop.test-session.local.md"
 
 cat > "$TEST_STATE_FILE" <<EOF
 ---
@@ -108,7 +110,7 @@ else
 fi
 
 # Check if log file was created
-LOG_FILE="$HOME/.claude/ralph-wiggum-pro-logs/sessions.jsonl"
+LOG_FILE="$HOME/.claude/ralph-wiggum-pro/logs/sessions.jsonl"
 if [[ -f "$LOG_FILE" ]]; then
   echo -e "${GREEN}✓ Log file created${NC}"
   ((TESTS_PASSED++))
@@ -208,7 +210,7 @@ echo ""
 echo "Testing: Error outcome with reason..."
 
 # Create another test state file
-TEST_STATE_FILE2="$TEST_DIR/.claude/ralph-loop.test-session-2.local.md"
+TEST_STATE_FILE2="$LOOPS_DIR/ralph-loop.test-session-2.local.md"
 cat > "$TEST_STATE_FILE2" <<EOF
 ---
 active: true

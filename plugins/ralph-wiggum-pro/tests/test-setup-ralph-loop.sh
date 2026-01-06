@@ -39,15 +39,28 @@ echo "Comprehensive test suite for Ralph loop initialization"
 
 # Create temp directory for test
 TEST_DIR=$(mktemp -d)
-trap "rm -rf $TEST_DIR" EXIT
+ORIGINAL_HOME="$HOME"
+
+cleanup() {
+  export HOME="$ORIGINAL_HOME"
+  rm -rf "$TEST_DIR"
+}
+trap cleanup EXIT
+
+# Override HOME so scripts use test directory
+export HOME="$TEST_DIR"
 cd "$TEST_DIR"
-mkdir -p .claude
+
+# Create directory structure matching new global paths
+LOOPS_DIR="$TEST_DIR/.claude/ralph-wiggum-pro/loops"
+LOGS_DIR="$TEST_DIR/.claude/ralph-wiggum-pro/logs"
+mkdir -p "$LOOPS_DIR" "$LOGS_DIR"
 
 # Helper: find state file for a session (by session_id in frontmatter)
 # Since state files now use loop_id (UUID) in filename, we search by frontmatter content
 find_state_file_for_session() {
   local session_id="$1"
-  for f in .claude/ralph-loop.*.local.md; do
+  for f in "$LOOPS_DIR"/ralph-loop.*.local.md; do
     [[ -f "$f" ]] || continue
     if grep -q "session_id: \"*${session_id}\"*" "$f" 2>/dev/null; then
       echo "$f"
@@ -59,12 +72,12 @@ find_state_file_for_session() {
 
 # Helper: get any newly created state file (for simple tests)
 get_latest_state_file() {
-  ls -t .claude/ralph-loop.*.local.md 2>/dev/null | head -1
+  ls -t "$LOOPS_DIR"/ralph-loop.*.local.md 2>/dev/null | head -1
 }
 
 # Helper: cleanup all state files
 cleanup_state_files() {
-  rm -f .claude/ralph-loop.*.local.md
+  rm -f "$LOOPS_DIR"/ralph-loop.*.local.md
 }
 
 # ============================================================================
@@ -188,7 +201,7 @@ if echo "$ERROR_OUTPUT" | grep -qi "no prompt\|empty"; then
   pass "Proper error for empty prompt file"
 else
   # If it doesn't explicitly error, check if state file was NOT created
-  if [[ ! -f ".claude/ralph-loop.${CLAUDE_SESSION_ID}.local.md" ]]; then
+  if [[ ! -f "$LOOPS_DIR/ralph-loop.${CLAUDE_SESSION_ID}.local.md" ]]; then
     pass "No state file created for empty prompt"
   else
     fail "Should error or reject empty prompt file" "Output: $ERROR_OUTPUT"
@@ -439,9 +452,9 @@ unset CLAUDE_SESSION_ID
 OUTPUT=$("$SETUP_SCRIPT" "Test without session ID" 2>&1) || true
 
 # Should either use a fallback or warn
-if ls .claude/ralph-loop.*.local.md 1>/dev/null 2>&1; then
+if ls "$LOOPS_DIR"/ralph-loop.*.local.md 1>/dev/null 2>&1; then
   pass "Fallback session ID used when CLAUDE_SESSION_ID not set"
-  rm -f .claude/ralph-loop.*.local.md
+  rm -f "$LOOPS_DIR"/ralph-loop.*.local.md
 elif echo "$OUTPUT" | grep -qi "warning\|session"; then
   pass "Warning issued when CLAUDE_SESSION_ID not set"
 else

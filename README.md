@@ -19,7 +19,7 @@ This fork adds the following features on top of the original Anthropic plugin:
 - **Remote Cancellation**: Cancel loops from the dashboard by deleting the state file
 
 ### v2.0.0 - Session Logging
-- **Session Logging**: All loop sessions are automatically logged to `~/.claude/ralph-wiggum-pro-logs/sessions.jsonl` with structured JSON data including project name, task, iterations, duration, outcome, and timestamps
+- **Session Logging**: All loop sessions are automatically logged to `~/.claude/ralph-wiggum-pro/logs/sessions.jsonl` with structured JSON data including project name, task, iterations, duration, outcome, and timestamps
 - **`/ralph-stats` Command**: View historical loop session data with filtering by project, outcome, or count
 - **Cancellation Logging**: Loop cancellations via `/cancel-ralph` are now logged to session history
 - **Atomic Writes**: Log entries use atomic write pattern to prevent corruption
@@ -27,7 +27,7 @@ This fork adds the following features on top of the original Anthropic plugin:
 
 ### v1.1.0 - Session Isolation
 - **Multi-Session Support**: Multiple Claude Code terminals can run independent Ralph loops on the same project simultaneously
-- **Session-Scoped State Files**: Each session gets its own state file (`.claude/ralph-loop.{session_id}.local.md`)
+- **Session-Scoped State Files**: Each session gets its own state file (`~/.claude/ralph-wiggum-pro/loops/ralph-loop.{session_id}.local.md`)
 - **SessionStart Hook**: Persists `CLAUDE_SESSION_ID` to environment for session tracking
 - **Multi-Session Commands**: `/list-ralph-loops` and `/cancel-ralph` updated to be session-aware
 - **Confirmation Prompts**: `/cancel-ralph` now asks for confirmation before cancelling
@@ -42,7 +42,7 @@ This fork adds the following features on top of the original Anthropic plugin:
 - **Progress Tracking**: Elapsed time display and iteration counting
 - **File-based Prompts**: Load complex prompts from markdown files with `--prompt-file`
 - **Loop Management**: List all active loops with `/list-ralph-loops`, cancel specific loops with `/cancel-ralph`
-- **Session Logging**: All loop sessions are logged to `~/.claude/ralph-wiggum-pro-logs/sessions.jsonl` with structured JSON data
+- **Session Logging**: All loop sessions are logged to `~/.claude/ralph-wiggum-pro/logs/sessions.jsonl` with structured JSON data
 - **Session Stats**: View historical loop data with `/ralph-stats` - filter by project, outcome, or time range
 
 ## What is Ralph?
@@ -186,7 +186,7 @@ my-api          Fix auth bug                   20/20      45m       FIXED       
 Total: 2 sessions | ✅ 1 | ⏹ 1 | 🚫 0 | ❌ 0
 ```
 
-**Log location:** `~/.claude/ralph-wiggum-pro-logs/sessions.jsonl`
+**Log location:** `~/.claude/ralph-wiggum-pro/logs/sessions.jsonl`
 
 ### Ralph Dashboard
 

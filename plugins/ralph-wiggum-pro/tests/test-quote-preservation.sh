@@ -38,10 +38,21 @@ echo "Verifies that internal quotes are preserved, only surrounding quotes strip
 
 # Create temp directory for test
 TEST_DIR=$(mktemp -d)
-trap "rm -rf $TEST_DIR" EXIT
+ORIGINAL_HOME="$HOME"
 
-# Create .claude directory
-mkdir -p "$TEST_DIR/.claude"
+cleanup() {
+  export HOME="$ORIGINAL_HOME"
+  rm -rf "$TEST_DIR"
+}
+trap cleanup EXIT
+
+# Override HOME so scripts use test directory
+export HOME="$TEST_DIR"
+
+# Create directory structure matching new global paths
+LOOPS_DIR="$TEST_DIR/.claude/ralph-wiggum-pro/loops"
+LOGS_DIR="$TEST_DIR/.claude/ralph-wiggum-pro/logs"
+mkdir -p "$LOOPS_DIR" "$LOGS_DIR"
 cd "$TEST_DIR"
 
 # ============================================================================
@@ -63,7 +74,7 @@ create_state_file() {
   local completion_promise="${4:-DONE}"
   local started_at="${5:-2024-01-15T10:00:00Z}"
 
-  cat > "$TEST_DIR/.claude/ralph-loop.${session_id}.local.md" <<EOF
+  cat > "$LOOPS_DIR/ralph-loop.${session_id}.local.md" <<EOF
 ---
 active: true
 session_id: "$session_id"
@@ -95,7 +106,7 @@ EXIT_CODE=$?
 
 if [[ $EXIT_CODE -eq 0 ]]; then
   # Check if loop stopped (promise detected)
-  if [[ ! -f "$TEST_DIR/.claude/ralph-loop.test-quotes-1.local.md" ]]; then
+  if [[ ! -f "$LOOPS_DIR/ralph-loop.test-quotes-1.local.md" ]]; then
     pass "Loop stopped - promise with internal quotes detected correctly"
   else
     fail "Loop did not stop - promise not detected" "State file still exists"
@@ -114,7 +125,7 @@ OUTPUT=$(echo "{\"session_id\":\"test-quotes-2\",\"transcript_path\":\"$TEST_DIR
 EXIT_CODE=$?
 
 if [[ $EXIT_CODE -eq 0 ]]; then
-  if [[ ! -f "$TEST_DIR/.claude/ralph-loop.test-quotes-2.local.md.md" ]]; then
+  if [[ ! -f "$LOOPS_DIR/ralph-loop.test-quotes-2.local.md.md" ]]; then
     pass "Loop stopped - promise with single quotes preserved"
   else
     fail "Loop did not stop with single quotes" "State file still exists"
@@ -133,7 +144,7 @@ OUTPUT=$(echo "{\"session_id\":\"test-quotes-3\",\"transcript_path\":\"$TEST_DIR
 EXIT_CODE=$?
 
 if [[ $EXIT_CODE -eq 0 ]]; then
-  if [[ ! -f "$TEST_DIR/.claude/ralph-loop.test-quotes-3.local.md" ]]; then
+  if [[ ! -f "$LOOPS_DIR/ralph-loop.test-quotes-3.local.md" ]]; then
     pass "Loop stopped - promise with mixed quotes preserved"
   else
     fail "Loop did not stop with mixed quotes" "State file still exists"
@@ -152,7 +163,7 @@ OUTPUT=$(echo "{\"session_id\":\"test-quotes-4\",\"transcript_path\":\"$TEST_DIR
 EXIT_CODE=$?
 
 if [[ $EXIT_CODE -eq 0 ]]; then
-  if [[ ! -f "$TEST_DIR/.claude/ralph-loop.test-quotes-4.local.md" ]]; then
+  if [[ ! -f "$LOOPS_DIR/ralph-loop.test-quotes-4.local.md" ]]; then
     pass "Promise with escaped quotes in JSON detected correctly"
   else
     fail "Promise with escaped quotes not detected"
@@ -178,7 +189,7 @@ OUTPUT=$(echo "{\"session_id\":\"test-strip-1\",\"transcript_path\":\"$TEST_DIR/
 # After #pattern stripping: Test passing (surrounding quotes removed)
 # Internal quotes: none in this case, but pattern should only remove surrounding
 
-if [[ $EXIT_CODE -eq 0 ]] && [[ ! -f "$TEST_DIR/.claude/ralph-loop.test-strip-1.local.md" ]]; then
+if [[ $EXIT_CODE -eq 0 ]] && [[ ! -f "$LOOPS_DIR/ralph-loop.test-strip-1.local.md" ]]; then
   pass "Loop stopped - surrounding quotes stripped correctly"
 else
   fail "Surrounding quote stripping failed"
@@ -191,7 +202,7 @@ create_transcript 'Done! <promise>All good</promise>'
 
 OUTPUT=$(echo "{\"session_id\":\"test-strip-2\",\"transcript_path\":\"$TEST_DIR/transcript.jsonl\"}" | "$HOOK_SCRIPT")
 
-if [[ $EXIT_CODE -eq 0 ]] && [[ ! -f "$TEST_DIR/.claude/ralph-loop.test-strip-2.local.md" ]]; then
+if [[ $EXIT_CODE -eq 0 ]] && [[ ! -f "$LOOPS_DIR/ralph-loop.test-strip-2.local.md" ]]; then
   pass "Loop stopped - single quotes stripped correctly"
 else
   fail "Single quote stripping failed"
@@ -209,7 +220,7 @@ create_transcript 'Progress: Tests are "passing" but not done. Promise: All comp
 OUTPUT=$(echo "{\"session_id\":\"test-no-match-1\",\"transcript_path\":\"$TEST_DIR/transcript.jsonl\"}" | "$HOOK_SCRIPT")
 EXIT_CODE=$?
 
-if [[ $EXIT_CODE -eq 0 ]] && [[ -f "$TEST_DIR/.claude/ralph-loop.test-no-match-1.local.md" ]]; then
+if [[ $EXIT_CODE -eq 0 ]] && [[ -f "$LOOPS_DIR/ralph-loop.test-no-match-1.local.md" ]]; then
   # State file should still exist (loop not stopped)
   # Read the output JSON to verify it blocks
   if echo "$OUTPUT" | grep -q '"decision": "block"'; then
@@ -238,7 +249,7 @@ create_transcript 'Done! <promise>All tests "passing"</promise>'
 OUTPUT=$(echo "{\"session_id\":\"test-edge-1\",\"transcript_path\":\"$TEST_DIR/transcript.jsonl\"}" | "$HOOK_SCRIPT")
 EXIT_CODE=$?
 
-if [[ $EXIT_CODE -eq 0 ]] && [[ ! -f "$TEST_DIR/.claude/ralph-loop.test-edge-1.local.md" ]]; then
+if [[ $EXIT_CODE -eq 0 ]] && [[ ! -f "$LOOPS_DIR/ralph-loop.test-edge-1.local.md" ]]; then
   pass "Edge case handled - internal quotes without surrounding"
 else
   fail "Edge case failed"

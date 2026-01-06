@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-01-06
+
+### Fixed
+- **Command Path References**: Fixed `ralph-loop.md` command to look for state files in global `~/.claude/ralph-wiggum-pro/loops/` directory instead of project-local `.claude/` (fixes "no matches found" error)
+- **Documentation Paths**: Updated path references in CLAUDE.md, README.md, help.md, ralph-stats.md, and ralph-dashboard/README.md to match v2.2.0 architecture
+- **Checklist Service Paths**: Fixed `checklist-service.sh` to use new global directory paths
+- **Test Suite Paths**: Updated all test files to use new global directory structure with proper HOME override
+
 ## [2.2.0] - 2026-01-06
 
 ### Changed

@@ -125,7 +125,7 @@ ralph-dashboard/
 ## Requirements
 
 - Ralph Wiggum Pro plugin must be installed and configured
-- Sessions are logged to `~/.claude/ralph-wiggum-pro-logs/sessions.jsonl`
+- Sessions are logged to `~/.claude/ralph-wiggum-pro/logs/sessions.jsonl`
 
 ## License
 

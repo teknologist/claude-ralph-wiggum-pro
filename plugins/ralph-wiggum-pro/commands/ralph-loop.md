@@ -13,11 +13,13 @@ Execute the setup script to initialize the Ralph loop:
 "${CLAUDE_PLUGIN_ROOT}/scripts/setup-ralph-loop.sh" $ARGUMENTS
 
 # Find state file for this session by scanning frontmatter
+# State files are in global directory: ~/.claude/ralph-wiggum-pro/loops/
 # If multiple exist (edge case from failed cleanup), pick most recent by started_at
+LOOPS_DIR="$HOME/.claude/ralph-wiggum-pro/loops"
 STATE_FILE=""
 LATEST_TS=""
-if [ -n "$CLAUDE_SESSION_ID" ]; then
-  for f in .claude/ralph-loop.*.local.md; do
+if [ -n "$CLAUDE_SESSION_ID" ] && [ -d "$LOOPS_DIR" ]; then
+  for f in "$LOOPS_DIR"/ralph-loop.*.local.md; do
     [ -f "$f" ] || continue
     F_SID=$(grep '^session_id:' "$f" 2>/dev/null | head -1 | sed 's/session_id: *"\{0,1\}\([^"]*\)"\{0,1\}.*/\1/' || echo "")
     if [ "$F_SID" = "$CLAUDE_SESSION_ID" ]; then

@@ -7,7 +7,7 @@ hide-from-slash-command-tool: "true"
 
 # Ralph Stats
 
-Show historical Ralph loop session data from `~/.claude/ralph-wiggum-pro-logs/sessions.jsonl`.
+Show historical Ralph loop session data from `~/.claude/ralph-wiggum-pro/logs/sessions.jsonl`.
 
 ## Parse Arguments
 

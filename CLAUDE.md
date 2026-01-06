@@ -92,10 +92,10 @@ User runs /ralph-loop "task" --completion-promise "DONE"
 
 ### Session Isolation
 
-Each Claude Code session gets a unique `CLAUDE_SESSION_ID` (set by SessionStart hook → `session-start-hook.sh`). State files are scoped per-session:
+Each Claude Code session gets a unique `CLAUDE_SESSION_ID` (set by SessionStart hook → `session-start-hook.sh`). State files are scoped per-session in a global directory:
 
 ```
-.claude/ralph-loop.{session_id}.local.md
+~/.claude/ralph-wiggum-pro/loops/ralph-loop.{session_id}.local.md
 ```
 
 Multiple terminals can run independent loops on the same project.
@@ -133,7 +133,7 @@ The actual prompt text goes here...
 
 ### Session Logging
 
-All loops are logged to `~/.claude/ralph-wiggum-pro-logs/sessions.jsonl` (JSONL format) with project, task, iterations, duration, outcome, and timestamps.
+All loops are logged to `~/.claude/ralph-wiggum-pro/logs/sessions.jsonl` (JSONL format) with project, task, iterations, duration, outcome, and timestamps.
 
 ## Key Files
 
@@ -171,11 +171,11 @@ All tests run in CI with the test:e2e command requiring a built frontend (`bun r
 
 ```bash
 # Clean up test entries from session logs (removes entries from temp directories)
-grep -v '/var/folders/' ~/.claude/ralph-wiggum-pro-logs/sessions.jsonl | grep -v '/tmp/' > /tmp/clean.jsonl && mv /tmp/clean.jsonl ~/.claude/ralph-wiggum-pro-logs/sessions.jsonl
+grep -v '/var/folders/' ~/.claude/ralph-wiggum-pro/logs/sessions.jsonl | grep -v '/tmp/' > /tmp/clean.jsonl && mv /tmp/clean.jsonl ~/.claude/ralph-wiggum-pro/logs/sessions.jsonl
 
-# Clean up any leftover state files in project (UUID-based loop_id filenames)
+# Clean up any leftover state files (global directory)
 # Note: Tests run in temp directories and usually clean up, but check just in case
-ls .claude/ralph-loop.*.local.md 2>/dev/null && rm -f .claude/ralph-loop.*.local.md || true
+ls ~/.claude/ralph-wiggum-pro/loops/ralph-loop.*.local.md 2>/dev/null && rm -f ~/.claude/ralph-wiggum-pro/loops/ralph-loop.*.local.md || true
 ```
 
 ## Commit Workflow

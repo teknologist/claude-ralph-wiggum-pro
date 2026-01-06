@@ -6,10 +6,10 @@
 set -euo pipefail
 
 # Transcript directory for storing checklists
-TRANSCRIPT_DIR="$HOME/.claude/ralph-wiggum-pro-logs/transcripts"
+TRANSCRIPT_DIR="$HOME/.claude/ralph-wiggum-pro/transcripts"
 
 # Debug logging helper
-DEBUG_LOG="$HOME/.claude/ralph-wiggum-pro-logs/debug.log"
+DEBUG_LOG="$HOME/.claude/ralph-wiggum-pro/logs/debug.log"
 debug_log() {
   local msg="$1"
   echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] checklist-service: $msg" >> "$DEBUG_LOG"
