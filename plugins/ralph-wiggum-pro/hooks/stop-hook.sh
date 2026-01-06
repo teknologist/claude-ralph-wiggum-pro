@@ -312,15 +312,38 @@ fi
 
 # Check for completion promise (only if set)
 if [[ "$COMPLETION_PROMISE" != "null" ]] && [[ -n "$COMPLETION_PROMISE" ]]; then
-  # IMPORTANT: Check ALL assistant messages, not just the last one
-  # This handles cases where Claude outputs the promise but then the final message
-  # is a tool call with no text content
-  # Using jq -s (slurp) to efficiently process all JSONL lines in one pass
-  # Note: Transcript format is {"message":{"role":"assistant", "content":[...]}}
-  # Role is inside message object, not at top level
-  ALL_ASSISTANT_TEXT=$(jq -rs '
-    [.[] | select(.message.role == "assistant") | .message.content[]? | select(.type == "text") | .text] | join("\n")
-  ' "$TRANSCRIPT_PATH" 2>/dev/null || echo "")
+  # IMPORTANT: Only check assistant messages AFTER this loop started
+  # This prevents false positives from previous loops in the same session (after /clear)
+  # The transcript is per-session and accumulates across /clear commands
+  #
+  # Strategy: Find the line containing "Loop ID: $LOOP_ID" (the setup message),
+  # then only scan assistant messages from lines AFTER that point
+
+  SETUP_LINE=0
+  if [[ -n "$LOOP_ID" ]]; then
+    # Find the line number where this loop's setup message appears in the JSONL transcript
+    # The setup message contains "Loop ID: {loop_id}" in its JSON text content
+    # Using grep -F for literal string match (no regex interpretation)
+    SETUP_LINE=$(grep -nF "Loop ID: $LOOP_ID" "$TRANSCRIPT_PATH" 2>/dev/null | head -1 | cut -d: -f1 || echo "0")
+    # Validate SETUP_LINE is numeric (defensive coding)
+    if [[ ! "$SETUP_LINE" =~ ^[0-9]+$ ]]; then
+      SETUP_LINE=0
+    fi
+    debug_log "Setup message found at line: $SETUP_LINE"
+  fi
+
+  # Extract assistant text only from lines AFTER the setup message
+  # If SETUP_LINE is 0 (not found), scan entire file (fallback for edge cases)
+  if [[ "$SETUP_LINE" -gt 0 ]]; then
+    ALL_ASSISTANT_TEXT=$(tail -n "+$((SETUP_LINE + 1))" "$TRANSCRIPT_PATH" | jq -rs '
+      [.[] | select(.message.role == "assistant") | .message.content[]? | select(.type == "text") | .text] | join("\n")
+    ' 2>/dev/null || echo "")
+  else
+    debug_log "WARNING: Setup line not found, scanning entire transcript (fallback)"
+    ALL_ASSISTANT_TEXT=$(jq -rs '
+      [.[] | select(.message.role == "assistant") | .message.content[]? | select(.type == "text") | .text] | join("\n")
+    ' "$TRANSCRIPT_PATH" 2>/dev/null || echo "")
+  fi
 
   # Extract text from <promise> tags using Perl for multiline support
   # -0777 slurps entire input, s flag makes . match newlines

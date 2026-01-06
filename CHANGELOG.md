@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.8] - 2026-01-06
+
+### Fixed
+- **False Promise Detection After `/clear`**: Fixed critical bug where stop hook incorrectly detected completion promises from previous loops
+  - Root cause: Transcript is per-session (not per-conversation), and `/clear` doesn't truncate it. The stop hook scanned ALL assistant messages, finding old promises from prior loops
+  - Fix: Now tracks the setup message line number using Loop ID and only scans transcript lines AFTER that point
+  - Uses `grep -F` for literal string matching (defensive against regex injection)
+  - Added numeric validation for line number (consistent with existing defensive patterns)
+
 ## [2.2.7] - 2026-01-06
 
 ### Fixed
