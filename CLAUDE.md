@@ -219,9 +219,10 @@ All tests run in CI with the test:e2e command requiring a built frontend (`bun r
 # Clean up test entries from session logs (removes entries from temp directories)
 grep -v '/var/folders/' ~/.claude/ralph-wiggum-pro/logs/sessions.jsonl | grep -v '/tmp/' > /tmp/clean.jsonl && mv /tmp/clean.jsonl ~/.claude/ralph-wiggum-pro/logs/sessions.jsonl
 
-# Clean up any leftover state files (global directory)
-# Note: Tests run in temp directories and usually clean up, but check just in case
-ls ~/.claude/ralph-wiggum-pro/loops/ralph-loop.*.local.md 2>/dev/null && rm -f ~/.claude/ralph-wiggum-pro/loops/ralph-loop.*.local.md || true
+# Clean up test state files only (match test session ID patterns, preserve real UUIDs)
+# Test session IDs: test-*, session-alpha, session-beta, session-aaa, etc.
+# Real session IDs are UUIDs like 1f5ef13f-1a80-4a50-8d85-bdee3a93904e - these are preserved
+rm -f ~/.claude/ralph-wiggum-pro/loops/ralph-loop.test-*.local.md ~/.claude/ralph-wiggum-pro/loops/ralph-loop.session-[a-z]*[a-z]*.local.md 2>/dev/null || true
 ```
 
 ## Commit Workflow
