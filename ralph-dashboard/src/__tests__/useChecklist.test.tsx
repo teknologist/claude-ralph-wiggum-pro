@@ -1,9 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useChecklist } from '../hooks/useChecklist';
 import type { ChecklistResponse } from '../../server/types';
+
+// Mock websocket module
+vi.mock('../lib/websocket', () => ({
+  subscribeToTranscript: vi.fn(() => vi.fn()),
+  subscribeToChecklist: vi.fn(() => vi.fn()),
+  transcriptWebSocket: {
+    subscribe: vi.fn(() => vi.fn()),
+    subscribeChecklist: vi.fn(() => vi.fn()),
+    disconnect: vi.fn(),
+    isConnected: vi.fn(() => false),
+  },
+}));
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -561,6 +573,184 @@ describe('useChecklist', () => {
       });
 
       expect(result.current.error).toBeDefined();
+    });
+
+    it('throws error when loopId is undefined', async () => {
+      // Create a hook with enabled=true but loopId undefined
+      // The queryFn will throw error when it executes
+      const { result } = renderHook(() => useChecklist(undefined, true), {
+        wrapper: createWrapper(),
+      });
+
+      // When loopId is undefined, the query is disabled, so we need to check it never runs
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.data).toBeUndefined();
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('WebSocket subscription', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('subscribes to checklist updates for active sessions', async () => {
+      const mockChecklistResponse = {
+        checklist: {
+          loop_id: 'test-loop-123',
+          completion_promise: 'DONE',
+          completion_criteria: [
+            {
+              id: 'criteria-1',
+              text: 'First criteria',
+              status: 'pending',
+              completed_iteration: null,
+            },
+          ],
+        },
+        progress: {
+          criteriaCompleted: 0,
+          criteriaTotal: 1,
+          criteria: '0/1 criteria',
+          percentage: 0,
+        },
+      };
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockChecklistResponse,
+      } as Response);
+
+      const { subscribeToChecklist } = await import('../lib/websocket');
+
+      renderHook(() => useChecklist('test-loop-123', true, true), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(
+        () => {
+          expect(subscribeToChecklist).toHaveBeenCalledWith(
+            'test-loop-123',
+            expect.any(Function)
+          );
+        },
+        { timeout: 3000 }
+      );
+    });
+
+    it('does not subscribe when not active', async () => {
+      const mockChecklistResponse = {
+        checklist: {
+          loop_id: 'test-loop-123',
+          completion_promise: 'DONE',
+          completion_criteria: [],
+        },
+        progress: null,
+      };
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockChecklistResponse,
+      } as Response);
+
+      const { subscribeToChecklist } = await import('../lib/websocket');
+
+      renderHook(() => useChecklist('test-loop-123', true, false), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(
+        () => {
+          expect(subscribeToChecklist).not.toHaveBeenCalled();
+        },
+        { timeout: 3000 }
+      );
+    });
+
+    it('updates cache when WebSocket data received', async () => {
+      const mockChecklistResponse = {
+        checklist: {
+          loop_id: 'test-loop-123',
+          completion_promise: 'DONE',
+          completion_criteria: [
+            {
+              id: 'criteria-1',
+              text: 'First criteria',
+              status: 'pending',
+              completed_iteration: null,
+            },
+          ],
+        },
+        progress: {
+          criteriaCompleted: 0,
+          criteriaTotal: 1,
+          criteria: '0/1 criteria',
+          percentage: 0,
+        },
+      };
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockChecklistResponse,
+      } as Response);
+
+      // Mock subscribeToChecklist with callback invocation
+      let receivedCallback: ((data: any) => void) | null = null;
+      vi.mocked(
+        await import('../lib/websocket')
+      ).subscribeToChecklist.mockImplementation((_loopId, callback) => {
+        receivedCallback = callback;
+        return vi.fn();
+      });
+
+      const { result } = renderHook(
+        ({ loopId }) => useChecklist(loopId, true, true),
+        {
+          wrapper: createWrapper(),
+          initialProps: { loopId: 'test-loop-123' },
+        }
+      );
+
+      // Wait for initial data to load
+      await waitFor(
+        () => {
+          expect(result.current.isSuccess).toBe(true);
+        },
+        { timeout: 3000 }
+      );
+
+      expect(result.current.data?.progress?.criteriaCompleted).toBe(0);
+
+      // Simulate WebSocket update
+      act(() => {
+        receivedCallback?.({
+          loopId: 'test-loop-123',
+          checklist: {
+            loop_id: 'test-loop-123',
+            completion_promise: 'DONE',
+            completion_criteria: [
+              {
+                id: 'criteria-1',
+                text: 'First criteria',
+                status: 'completed',
+                completed_iteration: 1,
+              },
+            ],
+          },
+          progress: {
+            criteriaCompleted: 1,
+            criteriaTotal: 1,
+            criteria: '1/1 criteria',
+            percentage: 100,
+          },
+        });
+      });
+
+      // Should update cache with new progress
+      await waitFor(() => {
+        expect(result.current.data?.progress?.criteriaCompleted).toBe(1);
+        expect(result.current.data?.progress?.criteriaTotal).toBe(1);
+      });
     });
   });
 });

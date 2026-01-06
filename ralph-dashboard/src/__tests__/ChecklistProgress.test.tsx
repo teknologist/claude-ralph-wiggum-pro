@@ -378,6 +378,66 @@ describe('ChecklistProgress', () => {
       // TODO placeholder checklists render nothing (hidden until agent populates)
       expect(container.firstChild).toBeNull();
     });
+
+    it('renders individual TODO placeholder items with "Needs Definition" badge when mixed with real items', () => {
+      const baseChecklist = mockChecklistResponse.checklist;
+      if (!baseChecklist)
+        throw new Error('mockChecklistResponse.checklist is null');
+
+      const mixedResponse: ChecklistResponse = {
+        checklist: {
+          loop_id: baseChecklist.loop_id,
+          session_id: baseChecklist.session_id,
+          project: baseChecklist.project,
+          project_name: baseChecklist.project_name,
+          created_at: baseChecklist.created_at,
+          updated_at: baseChecklist.updated_at,
+          completion_criteria: [
+            {
+              id: 'c1',
+              text: 'First criteria - defined',
+              status: 'completed',
+              created_at: '2024-01-15T10:30:00Z',
+              completed_at: '2024-01-15T10:35:00Z',
+              completed_iteration: 1,
+            },
+            {
+              id: 'c2',
+              text: 'TODO: Define acceptance criterion 2',
+              status: 'pending',
+              created_at: '2024-01-15T10:30:00Z',
+              completed_at: null,
+              completed_iteration: null,
+            },
+          ],
+        },
+        progress: {
+          criteria: '1/2 criteria',
+          criteriaCompleted: 1,
+          criteriaTotal: 2,
+        },
+      };
+
+      mockUseChecklist.mockReturnValue({
+        data: mixedResponse,
+        isLoading: false,
+        error: null,
+        isError: false,
+        refetch: vi.fn(),
+      } as any);
+
+      render(<ChecklistProgress loopId="test-loop" />, {
+        wrapper: createWrapper(),
+      });
+
+      // Should show the "Needs Definition" badge for TODO placeholder
+      expect(screen.getByText('Needs Definition')).toBeInTheDocument();
+      expect(
+        screen.getByText('Please define this acceptance criterion')
+      ).toBeInTheDocument();
+      // Should also show the completed item
+      expect(screen.getByText('First criteria - defined')).toBeInTheDocument();
+    });
   });
 
   describe('completed iteration display', () => {

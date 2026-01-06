@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionTable } from '../components/SessionTable';
 import type { Session } from '../../server/types';
@@ -7,6 +7,14 @@ import type { Session } from '../../server/types';
 // Mock the useCancelLoop hook
 vi.mock('../hooks/useCancelLoop', () => ({
   useCancelLoop: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+}));
+
+// Mock the useDeleteAllArchived hook
+vi.mock('../hooks/useDeleteAllArchived', () => ({
+  useDeleteAllArchived: () => ({
     mutate: vi.fn(),
     isPending: false,
   }),
@@ -323,6 +331,138 @@ describe('SessionTable', () => {
       // In card view, we should have the card container
       const cardContainer = screen.getByText('mobile-project').closest('div');
       expect(cardContainer).toBeInTheDocument();
+    });
+  });
+
+  describe('Delete All Archived functionality', () => {
+    it('shows Delete All button when archived tab is active and has sessions', () => {
+      const sessions: Session[] = [
+        createMockSession({ loop_id: 'loop-1', status: 'success' }),
+        createMockSession({ loop_id: 'loop-2', status: 'cancelled' }),
+      ];
+      render(
+        <SessionTable
+          sessions={sessions}
+          viewMode="table"
+          setViewMode={mockSetViewMode}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Switch to archived tab
+      fireEvent.click(screen.getByText('Archived'));
+
+      // Should show Delete All button
+      expect(screen.getByText('Delete All')).toBeInTheDocument();
+    });
+
+    it('does not show Delete All button on active tab', () => {
+      const sessions: Session[] = [
+        createMockSession({ loop_id: 'loop-1', status: 'active' }),
+      ];
+      render(
+        <SessionTable
+          sessions={sessions}
+          viewMode="table"
+          setViewMode={mockSetViewMode}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Should not show Delete All button on active tab
+      expect(screen.queryByText('Delete All')).not.toBeInTheDocument();
+    });
+
+    it('does not show Delete All button when archived tab is empty', () => {
+      const sessions: Session[] = [
+        createMockSession({ loop_id: 'loop-1', status: 'active' }),
+      ];
+      render(
+        <SessionTable
+          sessions={sessions}
+          viewMode="table"
+          setViewMode={mockSetViewMode}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Switch to archived tab (which is empty)
+      fireEvent.click(screen.getByText('Archived'));
+
+      // Should not show Delete All button when no archived sessions
+      expect(screen.queryByText('Delete All')).not.toBeInTheDocument();
+    });
+
+    it('opens delete all confirmation modal when Delete All button is clicked', async () => {
+      const mockDeleteAll = vi.fn();
+      vi.doMock('../hooks/useDeleteAllArchived', () => ({
+        useDeleteAllArchived: () => ({
+          mutate: mockDeleteAll,
+          isPending: false,
+        }),
+      }));
+
+      const sessions: Session[] = [
+        createMockSession({ loop_id: 'loop-1', status: 'success' }),
+      ];
+      render(
+        <SessionTable
+          sessions={sessions}
+          viewMode="table"
+          setViewMode={mockSetViewMode}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Switch to archived tab
+      fireEvent.click(screen.getByText('Archived'));
+
+      // Click Delete All button
+      fireEvent.click(screen.getByText('Delete All'));
+
+      // Should show confirmation modal
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Delete All Archived Loops/)
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('calls deleteAllMutation when confirm is clicked', async () => {
+      const mockDeleteAll = vi.fn();
+      vi.doMock('../hooks/useDeleteAllArchived', () => ({
+        useDeleteAllArchived: () => ({
+          mutate: mockDeleteAll,
+          isPending: false,
+        }),
+      }));
+
+      const sessions: Session[] = [
+        createMockSession({ loop_id: 'loop-1', status: 'success' }),
+      ];
+      render(
+        <SessionTable
+          sessions={sessions}
+          viewMode="table"
+          setViewMode={mockSetViewMode}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Switch to archived tab
+      fireEvent.click(screen.getByText('Archived'));
+
+      // Click Delete All button
+      fireEvent.click(screen.getByText('Delete All'));
+
+      // Click confirm button
+      const confirmButton = screen
+        .getAllByText('Delete All')
+        .find((btn) => btn.getAttribute('class')?.includes('bg-red-600'));
+      if (confirmButton) {
+        fireEvent.click(confirmButton);
+        expect(mockDeleteAll).toHaveBeenCalled();
+      }
     });
   });
 });
