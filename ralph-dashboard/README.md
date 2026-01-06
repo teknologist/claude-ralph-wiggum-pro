@@ -120,12 +120,28 @@ ralph-dashboard/
 | GET | `/api/sessions` | List all sessions |
 | GET | `/api/sessions/:id` | Get session details |
 | POST | `/api/sessions/:id/cancel` | Cancel an active session |
+| POST | `/api/sessions/:id/archive` | Archive an orphaned session |
 | DELETE | `/api/sessions/:id` | Permanently delete an archived session |
+| GET | `/api/transcript/iterations/:loopId` | Get paginated iteration transcripts |
+| GET | `/api/transcript/full/:loopId` | Get full transcript with user prompt |
+| GET | `/api/transcript/check/:loopId` | Check if transcript exists |
+| GET | `/api/checklist/:loopId` | Get checklist progress for a loop |
+
+## Data Sources
+
+The dashboard reads from the following files in `~/.claude/ralph-wiggum-pro/`:
+
+| Directory | Purpose |
+|-----------|---------|
+| `loops/` | Active loop state files (frontmatter + prompt) |
+| `logs/sessions.jsonl` | Session history (JSONL format) |
+| `transcripts/` | Iteration and full transcript files |
 
 ## Requirements
 
 - Ralph Wiggum Pro plugin must be installed and configured
 - Sessions are logged to `~/.claude/ralph-wiggum-pro/logs/sessions.jsonl`
+- State files stored in `~/.claude/ralph-wiggum-pro/loops/`
 
 ## License
 

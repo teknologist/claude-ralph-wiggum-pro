@@ -58,6 +58,23 @@ Start a Ralph loop in your current session.
 
 ---
 
+### /list-ralph-loops
+
+List all active Ralph loops across all sessions.
+
+**Usage:**
+```
+/list-ralph-loops
+```
+
+**Shows:**
+- Session ID (truncated)
+- Task description
+- Current iteration / max iterations
+- Elapsed time since start
+
+---
+
 ### /cancel-ralph
 
 Cancel an active Ralph loop (removes the loop state file).
@@ -154,6 +171,24 @@ You'll see Ralph:
 - One-shot operations
 - Tasks with unclear success criteria
 - Debugging production issues (use targeted debugging instead)
+
+## Session Isolation
+
+Ralph Wiggum Pro supports **multiple concurrent loops** in different Claude Code terminals:
+
+- Each terminal gets a unique session ID
+- Session IDs are tracked via PPID files (keyed by Claude Code's process ID)
+- Works correctly even after `/clear` commands
+- State files are isolated per session: `~/.claude/ralph-wiggum-pro/loops/ralph-loop.{session_id}.local.md`
+
+### Dashboard
+
+Monitor and manage all your Ralph loops from a web browser:
+
+```bash
+bunx ralph-dashboard           # Start on localhost:3847
+bunx ralph-dashboard -p 8080   # Custom port
+```
 
 ## Learn More
 

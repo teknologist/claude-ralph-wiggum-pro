@@ -90,22 +90,60 @@ User runs /ralph-loop "task" --completion-promise "DONE"
             (loop continues)
 ```
 
-### Session Isolation
+### Session Isolation & PPID-Based Tracking
 
-Each Claude Code session gets a unique `CLAUDE_SESSION_ID` (set by SessionStart hook → `session-start-hook.sh`). State files are scoped per-session in a global directory:
+Each Claude Code session gets a unique `CLAUDE_SESSION_ID`. The plugin uses **PPID-based session tracking** for reliable identification:
 
+**Process Tree Walking:**
+```
+Claude Code (PID=35553)  ← session-start-hook writes to ppid_35553.id
+├─ shell (PID=37816)     ← setup-ralph-loop's $PPID
+│   └─ setup-ralph-loop (PID=37832)  ← walks UP tree to find ppid_35553.id
+└─ shell (PID=38001)     ← stop-hook's $PPID (different!)
+    └─ stop-hook (PID=38012)  ← also walks UP tree, syncs session ID
+```
+
+**Key Mechanisms:**
+- `session-start-hook.sh` → Writes session ID to `~/.claude/ralph-wiggum-pro/sessions/ppid_{claude_code_pid}.id`
+- `setup-ralph-loop.sh` → Walks process tree UP to find PPID file, reads session ID
+- `stop-hook.sh` → Walks process tree, receives current session ID from hook JSON, **synchronizes** PPID file if mismatch detected
+
+**Why PPID-based tracking?**
+- Claude Code may regenerate session IDs internally (after `/clear`, context changes)
+- PPID file survives these regenerations (keyed by process PID, not session ID)
+- Stop hook keeps PPID file updated so subsequent loops find correct session ID
+
+**State files** are scoped per-session in a global directory:
 ```
 ~/.claude/ralph-wiggum-pro/loops/ralph-loop.{session_id}.local.md
 ```
 
 Multiple terminals can run independent loops on the same project.
 
+### Global Directory Structure
+
+```
+~/.claude/ralph-wiggum-pro/
+├── loops/                    # Active loop state files
+│   └── ralph-loop.{session_id}.local.md
+├── logs/
+│   ├── sessions.jsonl        # Session history (JSONL format)
+│   └── debug.log             # Debug output (auto-rotates at 1MB)
+├── sessions/                 # PPID-based session tracking
+│   └── ppid_{pid}.id         # Session ID for Claude Code process
+└── transcripts/              # Iteration transcripts
+    ├── {loop_id}_iter_{n}.txt
+    └── {loop_id}_full.txt
+```
+
 ### State File Format
+
+State files use YAML frontmatter. **Note**: File existence = active loop (no `active` field).
 
 ```yaml
 ---
-active: true
 session_id: "abc123"
+loop_id: "xK9mZ"
 description: "Build a REST API..."
 iteration: 5
 max_iterations: 50
@@ -139,23 +177,31 @@ All loops are logged to `~/.claude/ralph-wiggum-pro/logs/sessions.jsonl` (JSONL 
 
 | File | Purpose |
 |------|---------|
-| `plugins/ralph-wiggum-pro/hooks/stop-hook.sh` | Intercepts exit, checks for completion promise, feeds prompt back |
-| `plugins/ralph-wiggum-pro/hooks/session-start-hook.sh` | Persists CLAUDE_SESSION_ID to environment |
-| `plugins/ralph-wiggum-pro/scripts/setup-ralph-loop.sh` | Creates state file with frontmatter + prompt |
-| `plugins/ralph-wiggum-pro/scripts/log-session.sh` | Logs session events to JSONL |
+| `plugins/ralph-wiggum-pro/hooks/stop-hook.sh` | Intercepts exit, checks promise, syncs PPID file, feeds prompt back |
+| `plugins/ralph-wiggum-pro/hooks/session-start-hook.sh` | Writes session ID to PPID file (`ppid_$PPID.id`) |
+| `plugins/ralph-wiggum-pro/hooks/session-end-hook.sh` | Cleans up PPID file and orphaned state files |
+| `plugins/ralph-wiggum-pro/scripts/setup-ralph-loop.sh` | Creates state file, walks process tree for session ID |
+| `plugins/ralph-wiggum-pro/scripts/log-session.sh` | Logs session events to JSONL, handles rotation |
+| `plugins/ralph-wiggum-pro/scripts/cancel-ralph-loop.sh` | Cancels loops programmatically |
 | `ralph-dashboard/server/services/loop-manager.ts` | Parses state files, validates session data |
+| `ralph-dashboard/server/services/log-parser.ts` | Parses JSONL session logs |
+| `ralph-dashboard/server/services/transcript-service.ts` | Reads transcript files for dashboard display |
 
 ## Environment Variables
 
-- `CLAUDE_SESSION_ID` - Set by session-start hook, identifies current session
-- `CLAUDE_ENV_FILE` - Path to environment file for session persistence
+- `CLAUDE_SESSION_ID` - Set by Claude Code, identifies current session (may change after `/clear`)
+- `CLAUDE_ENV_FILE` - Path to environment file (only available in hooks, not slash commands)
 - `CLAUDE_PLUGIN_ROOT` - Base path for plugin resources
+- `$PPID` - Parent process ID (used to find Claude Code's PID via process tree walking)
 
 ## Security Considerations
 
-- Session IDs validated: only `[a-zA-Z0-9._-]` allowed, `..` rejected (path traversal prevention)
-- Paths resolved and verified to be within `.claude/` directory
-- Quote stripping on completion promise to handle shell expansion artifacts
+- **Session ID validation**: Only `[a-zA-Z0-9._-]` allowed, `..` rejected (path traversal prevention)
+- **PPID validation**: Numeric check before using in file paths
+- **Atomic file writes**: All file operations use `mktemp` + `mv` pattern for safe concurrent access
+- **Path validation**: All paths resolved and verified to be within `~/.claude/ralph-wiggum-pro/` directory
+- **Loop ID validation**: 5-character alphanumeric, internally generated (not user input)
+- **Quote stripping**: Completion promise quotes handled to prevent shell expansion artifacts
 
 ## Testing Strategy
 

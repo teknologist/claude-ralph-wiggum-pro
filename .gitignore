@@ -8,3 +8,4 @@
 /test-results
 counter.txt
 /test-stop-hook-promise-detection.sh
+/counterglm.txt

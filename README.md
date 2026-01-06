@@ -8,31 +8,58 @@ Implementation of the Ralph Wiggum technique for iterative, self-referential AI 
 
 This fork adds the following features on top of the original Anthropic plugin:
 
-### v2.0.1 - Dashboard
+### v2.2.x - Robust Multi-Session Architecture (Latest)
+
+**Core Architecture:**
+- **Global Directory Consolidation**: All Ralph data stored under `~/.claude/ralph-wiggum-pro/`:
+  - `loops/` - State files for active loops
+  - `logs/` - Session logs (`sessions.jsonl`, `debug.log`)
+  - `sessions/` - PPID session tracking files
+  - `transcripts/` - Iteration and full transcript files
+- **PPID-Based Session Tracking**: Reliable session identification using process tree walking:
+  - Session ID stored in `ppid_$PID.id` files (keyed by Claude Code's PID)
+  - Survives `/clear` commands within the same terminal
+  - Automatically synchronized when Claude Code regenerates session IDs internally
+- **Simplified State Management**: File existence = active loop (no more `active` field in frontmatter)
+- **Automatic Cleanup**: SessionEnd hook removes state files when terminal closes
+
+**Session ID Synchronization (v2.2.9):**
+- Stop hook walks process tree to find existing PPID file
+- Updates PPID file with current session ID when mismatch detected
+- Ensures subsequent loops in the same session work correctly
+- Uses atomic writes (`mktemp` + `mv`) for safe concurrent access
+
+**Transcript System (v2.1.x):**
+- Iteration-by-iteration output capture
+- Timeline view with collapsible iterations in dashboard
+- Full transcript modal with search functionality
+- Export transcripts as Markdown
+
+**Checklist System (v2.1.1):**
+- Task and acceptance criteria tracking
+- Progress display in dashboard and `/ralph-stats`
+- Checklist summary in each iteration's system message
+
+### v2.0.x - Dashboard & Session Logging
+
 - **Ralph Dashboard**: Web-based dashboard for monitoring and managing Ralph loops
   - View all active and archived loops in real-time
   - Cancel active loops directly from the browser
   - Track statistics: success rates, durations, iteration counts
   - Run with `bunx ralph-dashboard` or `npx ralph-dashboard`
   - Configurable port (`--port`) and host (`--host 0.0.0.0` for public access)
-- **Active Loop Tracking**: Loops are now logged when they start (not just when they complete)
-- **Remote Cancellation**: Cancel loops from the dashboard by deleting the state file
-
-### v2.0.0 - Session Logging
-- **Session Logging**: All loop sessions are automatically logged to `~/.claude/ralph-wiggum-pro/logs/sessions.jsonl` with structured JSON data including project name, task, iterations, duration, outcome, and timestamps
-- **`/ralph-stats` Command**: View historical loop session data with filtering by project, outcome, or count
-- **Cancellation Logging**: Loop cancellations via `/cancel-ralph` are now logged to session history
-- **Atomic Writes**: Log entries use atomic write pattern to prevent corruption
-- **jq Dependency Check**: Clear error message if `jq` is not installed
+- **Session Logging**: All loops logged to `~/.claude/ralph-wiggum-pro/logs/sessions.jsonl`
+- **`/ralph-stats` Command**: View historical loop data with filtering by project, outcome, or count
+- **Active Loop Tracking**: Loops logged when they start (not just when complete)
+- **Remote Cancellation**: Cancel loops from dashboard
+- **Atomic Writes**: All file operations use `mktemp` + `mv` pattern
 
 ### v1.1.0 - Session Isolation
-- **Multi-Session Support**: Multiple Claude Code terminals can run independent Ralph loops on the same project simultaneously
-- **Session-Scoped State Files**: Each session gets its own state file (`~/.claude/ralph-wiggum-pro/loops/ralph-loop.{session_id}.local.md`)
-- **SessionStart Hook**: Persists `CLAUDE_SESSION_ID` to environment for session tracking
-- **Multi-Session Commands**: `/list-ralph-loops` and `/cancel-ralph` updated to be session-aware
-- **Confirmation Prompts**: `/cancel-ralph` now asks for confirmation before cancelling
-- **Zsh Compatibility**: Fixed glob expansion errors in list and cancel commands
-- **Comprehensive Test Suite**: Added tests for session isolation, state file parsing, and security validation
+
+- **Multi-Session Support**: Multiple Claude Code terminals can run independent Ralph loops
+- **Session-Scoped State Files**: Each session gets isolated state files
+- **Confirmation Prompts**: `/cancel-ralph` asks for confirmation before cancelling
+- **Comprehensive Test Suite**: Tests for session isolation, state file parsing, security validation
 
 ---
 
@@ -76,6 +103,67 @@ This creates a **self-referential feedback loop** where:
 - Claude's previous work persists in files
 - Each iteration sees modified files and git history
 - Claude autonomously improves by reading its own past work in files
+
+## Architecture
+
+### Process Tree & Session ID Resolution
+
+```
+Claude Code (PID=35553)  ← session-start-hook writes to ppid_35553.id
+├─ shell (PID=37816)     ← setup-ralph-loop's $PPID
+│   └─ setup-ralph-loop (PID=37832)  ← walks UP tree to find ppid_35553.id
+└─ shell (PID=38001)     ← stop-hook's $PPID (different!)
+    └─ stop-hook (PID=38012)  ← also walks UP tree to find ppid_35553.id
+```
+
+Both `setup-ralph-loop.sh` and `stop-hook.sh` walk up the process tree to find the Claude Code PID and its corresponding session file. This ensures consistent session ID resolution regardless of shell nesting depth.
+
+### Directory Structure
+
+All Ralph data is stored under `~/.claude/ralph-wiggum-pro/`:
+
+```
+~/.claude/ralph-wiggum-pro/
+├── loops/                    # Active loop state files
+│   └── ralph-loop.{session_id}.local.md
+├── logs/
+│   ├── sessions.jsonl        # Session history (JSONL format)
+│   └── debug.log             # Debug output (auto-rotates at 1MB)
+├── sessions/                 # PPID-based session tracking
+│   └── ppid_{pid}.id         # Contains session ID for Claude Code process
+└── transcripts/              # Iteration transcripts
+    ├── {loop_id}_iter_{n}.txt
+    └── {loop_id}_full.txt
+```
+
+### State File Format
+
+State files use YAML frontmatter followed by the prompt:
+
+```yaml
+---
+session_id: "abc123"
+loop_id: "xK9mZ"
+description: "Build a REST API..."
+iteration: 5
+max_iterations: 50
+completion_promise: "TASK COMPLETE"
+started_at: "2024-01-15T10:30:00Z"
+---
+
+Your prompt text here...
+```
+
+### Session ID Synchronization
+
+Claude Code may internally regenerate session IDs (e.g., after `/clear` or when conversation context changes). The stop hook handles this by:
+
+1. Receiving the **current** session ID from Claude Code's hook JSON
+2. Walking the process tree to find the **existing** PPID file
+3. Updating that PPID file with the current session ID (atomic write)
+4. Subsequent `/ralph-loop` commands then read the correct session ID
+
+This ensures Ralph loops continue working even when session IDs change internally.
 
 ## Quick Start
 
