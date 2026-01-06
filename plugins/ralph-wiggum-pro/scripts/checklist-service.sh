@@ -22,7 +22,13 @@ validate_loop_id() {
     _checklist_debug_log "ERROR: loop_id is empty"
     return 1
   fi
-  if [[ ! "$loop_id" =~ ^[a-zA-Z0-9._-]{1,256}$ ]]; then
+  # Check length (1-256 characters) - separate check for zsh compatibility
+  if [[ ${#loop_id} -gt 256 ]]; then
+    _checklist_debug_log "ERROR: loop_id too long: $loop_id"
+    return 1
+  fi
+  # Check character class - use simple pattern without quantifiers for zsh compatibility
+  if [[ ! "$loop_id" =~ ^[a-zA-Z0-9._-]+$ ]]; then
     _checklist_debug_log "ERROR: Invalid loop_id format: $loop_id"
     return 1
   fi
@@ -67,11 +73,13 @@ checklist_get() {
 }
 
 # Initialize checklist (first iteration only)
-# Usage: checklist_init "<loop_id>" '<json>'
+# Usage: checklist_init "<loop_id>" '<json>' [--force]
 # JSON format: {"completion_criteria": [{"id":"c1","text":"..."}, ...]}
+# Use --force to overwrite existing checklist (for replacing placeholders)
 checklist_init() {
   local loop_id="$1"
   local json="$2"
+  local force_flag="${3:-}"
 
   if ! validate_loop_id "$loop_id"; then
     echo "ERROR: Invalid loop_id format" >&2
@@ -86,10 +94,10 @@ checklist_init() {
   local checklist_path
   checklist_path=$(checklist_get_path "$loop_id")
 
-  # Check if checklist already exists
-  if [[ -f "$checklist_path" ]]; then
+  # Check if checklist already exists (allow --force to overwrite)
+  if [[ -f "$checklist_path" ]] && [[ "$force_flag" != "--force" ]]; then
     echo "ERROR: Checklist already exists for loop_id: $loop_id" >&2
-    echo "Use checklist_status to update items or checklist_add to add new items" >&2
+    echo "Use --force to overwrite, or checklist_update_text to modify items" >&2
     return 1
   fi
 
@@ -183,28 +191,22 @@ checklist_status() {
   local now
   now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-  # Build update script for jq
-  local jq_script
+  # Update checklist using jq
+  local updated
   if [[ "$status" == "completed" ]]; then
     # For completed status, set completed_at and completed_iteration
     if [[ -z "$iteration" ]]; then
       echo "WARNING: iteration number not provided for completed status" >&2
     fi
-    jq_script="
-      (.completion_criteria[] | select(.id == \"\$item_id\")) |= (.status = \"\$status\" | .completed_at = \"\$now\" | .completed_iteration = (\$iteration // null)) |
-      .updated_at = \"\$now\"
-    "
+    updated=$(jq --arg item_id "$item_id" --arg status "$status" --arg now "$now" --arg iteration "$iteration" \
+      '(.completion_criteria[] | select(.id == $item_id)) |= (.status = $status | .completed_at = $now | .completed_iteration = ($iteration | tonumber? // null)) | .updated_at = $now' \
+      "$checklist_path")
   else
     # For pending/in_progress, clear completed_at and completed_iteration
-    jq_script="
-      (.completion_criteria[] | select(.id == \"\$item_id\")) |= (.status = \"\$status\" | .completed_at = null | .completed_iteration = null) |
-      .updated_at = \"\$now\"
-    "
+    updated=$(jq --arg item_id "$item_id" --arg status "$status" --arg now "$now" \
+      '(.completion_criteria[] | select(.id == $item_id)) |= (.status = $status | .completed_at = null | .completed_iteration = null) | .updated_at = $now' \
+      "$checklist_path")
   fi
-
-  # Update checklist
-  local updated
-  updated=$(jq --arg item_id "$item_id" --arg status "$status" --arg now "$now" --arg iteration "$iteration" "$jq_script" "$checklist_path")
 
   if [[ -z "$updated" ]]; then
     echo "ERROR: Failed to update checklist item with id: $item_id" >&2
@@ -213,7 +215,7 @@ checklist_status() {
 
   # Check if item was found
   local item_exists
-  item_exists=$(echo "$updated" | jq "[.completion_criteria[]] | any(.id == \"\$item_id\")" --arg item_id "$item_id")
+  item_exists=$(echo "$updated" | jq --arg item_id "$item_id" '[.completion_criteria[]] | any(.id == $item_id)')
 
   if [[ "$item_exists" != "true" ]]; then
     echo "ERROR: Item with id '$item_id' not found in checklist" >&2
@@ -288,6 +290,66 @@ checklist_add() {
   return 0
 }
 
+# Update criterion text (for populating placeholders)
+# Usage: checklist_update_text "<loop_id>" "<item_id>" "<new_text>"
+checklist_update_text() {
+  local loop_id="$1"
+  local item_id="$2"
+  local new_text="$3"
+
+  if ! validate_loop_id "$loop_id"; then
+    echo "ERROR: Invalid loop_id format" >&2
+    return 1
+  fi
+
+  if [[ -z "$item_id" ]]; then
+    echo "ERROR: item_id is required" >&2
+    return 1
+  fi
+
+  if [[ -z "$new_text" ]]; then
+    echo "ERROR: new_text is required" >&2
+    return 1
+  fi
+
+  local checklist_path
+  checklist_path=$(checklist_get_path "$loop_id")
+
+  if [[ ! -f "$checklist_path" ]]; then
+    echo "ERROR: Checklist not found for loop_id: $loop_id" >&2
+    return 1
+  fi
+
+  local now
+  now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+  # Update the text field for the matching item
+  local updated
+  updated=$(jq --arg item_id "$item_id" --arg text "$new_text" --arg now "$now" \
+    '(.completion_criteria[] | select(.id == $item_id)).text = $text | .updated_at = $now' \
+    "$checklist_path")
+
+  if [[ -z "$updated" ]]; then
+    echo "ERROR: Failed to update criterion text" >&2
+    return 1
+  fi
+
+  # Check if item was found
+  local item_exists
+  item_exists=$(echo "$updated" | jq --arg item_id "$item_id" '[.completion_criteria[]] | any(.id == $item_id)')
+
+  if [[ "$item_exists" != "true" ]]; then
+    echo "ERROR: Item with id '$item_id' not found in checklist" >&2
+    return 1
+  fi
+
+  # Write updated checklist
+  echo "$updated" > "$checklist_path"
+
+  _checklist_debug_log "Updated text for item $item_id in loop_id: $loop_id"
+  return 0
+}
+
 # Get checklist summary
 # Usage: checklist_summary "<loop_id>"
 # Outputs: "2/4 completed"
@@ -345,15 +407,15 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   # Script is being executed directly
   if [[ $# -eq 0 ]]; then
     echo "Usage: $0 <function> <args...>" >&2
-    echo "Functions: checklist_init, checklist_status, checklist_add, checklist_get, checklist_exists, checklist_summary, checklist_status_list" >&2
+    echo "Functions: checklist_init, checklist_status, checklist_add, checklist_get, checklist_exists, checklist_summary, checklist_status_list, checklist_update_text" >&2
     exit 1
   fi
 
-  local func="$1"
+  func="$1"
   shift
 
   case "$func" in
-    checklist_init|checklist_status|checklist_add|checklist_get|checklist_exists|checklist_summary|checklist_status_list)
+    checklist_init|checklist_status|checklist_add|checklist_get|checklist_exists|checklist_summary|checklist_status_list|checklist_update_text)
       "$func" "$@"
       ;;
     *)

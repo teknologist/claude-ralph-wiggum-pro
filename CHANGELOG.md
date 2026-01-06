@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-01-06
+
+### Added
+- **Auto-created placeholder checklist**: `setup-ralph-loop.sh` now creates a placeholder checklist with 3 TODO items when a loop starts, ensuring checklist files always exist
+- **`checklist_update_text()` function**: New function in `checklist-service.sh` for updating individual criterion text (useful for populating placeholders)
+- **`--force` flag for `checklist_init()`**: Allows overwriting existing checklists to replace placeholders with real acceptance criteria
+- **TODO placeholder styling in dashboard**: Checklist items starting with "TODO:" display with amber warning styling and "Needs Definition" badge
+
+### Fixed
+- **Zsh regex compatibility**: Split `{1,256}` quantifier into separate length check in `validate_loop_id()` - zsh doesn't support `{n,m}` quantifiers in `=~`
+- **jq variable syntax in `checklist_status()`**: Fixed incorrect shell escaping that caused item updates to fail
+- **`local` keyword outside function**: Removed `local` from dispatch section that caused errors when script executed directly
+
+### Changed
+- **ralph-loop.md instructions**: Changed from "CREATE" to "POPULATE" checklist, added documentation for `--force` flag and `checklist_update_text`
+
 ## [2.3.0] - 2026-01-06
 
 ### Added

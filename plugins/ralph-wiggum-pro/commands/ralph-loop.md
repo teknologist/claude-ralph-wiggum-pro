@@ -83,18 +83,19 @@ if [ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ]; then
 
   echo ""
   echo "═══════════════════════════════════════════════════════════"
-  echo "MANDATORY: CREATE ACCEPTANCE CRITERIA CHECKLIST"
+  echo "MANDATORY: POPULATE ACCEPTANCE CRITERIA CHECKLIST"
   echo "═══════════════════════════════════════════════════════════"
   echo ""
-  echo "BEFORE starting work, you MUST create a checklist of acceptance"
+  echo "A placeholder checklist has been created with TODO items."
+  echo "BEFORE starting work, you MUST populate it with real acceptance"
   echo "criteria. These are the conditions that must ALL be true before"
   echo "you can output the completion promise."
   echo ""
   echo "1. ANALYZE the task and identify what 'done' means"
   echo "2. DEFINE 3-6 specific, verifiable acceptance criteria"
-  echo "3. CREATE the checklist by running:"
+  echo "3. REPLACE the placeholder checklist by running:"
   echo ""
-  echo "   $CHECKLIST_SCRIPT checklist_init \"$LOOP_ID\" '<json>'"
+  echo "   $CHECKLIST_SCRIPT checklist_init \"$LOOP_ID\" '<json>' --force"
   echo ""
   echo "JSON format:"
   echo '   {"completion_criteria":[{"id":"c1","text":"..."},{"id":"c2","text":"..."}]}'
@@ -104,6 +105,9 @@ if [ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ]; then
   echo '     {"id":"c1","text":"API endpoints return 200 for valid requests"},'
   echo '     {"id":"c2","text":"Authentication rejects invalid tokens"},'
   echo '     {"id":"c3","text":"All tests pass"}]}'
+  echo ""
+  echo "OR update individual items:"
+  echo "   $CHECKLIST_SCRIPT checklist_update_text \"$LOOP_ID\" \"c1\" \"Real criterion\""
   echo ""
   echo "IMPORTANT: The completion promise can ONLY be output when ALL"
   echo "criteria are marked 'completed'. Update status as you verify:"

@@ -530,6 +530,22 @@ fi
   --max-iterations "$MAX_ITERATIONS" \
   --completion-promise "$COMPLETION_PROMISE_LOG" 2>/dev/null || true
 
+# Create placeholder checklist for this loop
+CHECKLIST_SCRIPT="$SCRIPT_DIR/checklist-service.sh"
+if [[ -f "$CHECKLIST_SCRIPT" ]]; then
+  # shellcheck source=/dev/null
+  source "$CHECKLIST_SCRIPT"
+
+  # Create placeholder checklist with TODO items
+  PLACEHOLDER_JSON='{"completion_criteria":[{"id":"c1","text":"TODO: Define acceptance criterion 1"},{"id":"c2","text":"TODO: Define acceptance criterion 2"},{"id":"c3","text":"TODO: Define acceptance criterion 3"}]}'
+
+  if checklist_init "$LOOP_ID" "$PLACEHOLDER_JSON" 2>/dev/null; then
+    debug_log "Created placeholder checklist for loop_id: $LOOP_ID"
+  else
+    debug_log "Failed to create placeholder checklist for loop_id: $LOOP_ID"
+  fi
+fi
+
 # Output setup message
 cat <<EOF
 Ralph loop activated in this session!
