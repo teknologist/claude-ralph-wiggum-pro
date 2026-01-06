@@ -130,7 +130,7 @@ if [ -n "$LOOP_ID" ]; then
   echo ""
   echo "The completion promise can ONLY be output when ALL criteria are"
   echo "marked 'completed'. Update status as you verify each one:"
-  echo "     $CHECKLIST_SCRIPT checklist_status \"$LOOP_ID\" \"<id>\" \"completed\""
+  echo "     $CHECKLIST_SCRIPT checklist_status \"$LOOP_ID\" \"<id>\" \"completed\" <iteration>"
   echo ""
   echo "Dashboard displays progress in real-time."
   echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.6] - 2026-01-06
+
+### Fixed
+- **checklist_status iteration parameter missing**: The usage example in `ralph-loop.md` now includes the `<iteration>` placeholder, preventing "iteration number not provided for completed status" warnings when agents copy the command template
+
 ## [2.3.5] - 2026-01-06
 
 ### Fixed
