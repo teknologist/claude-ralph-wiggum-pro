@@ -35,9 +35,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'COVERAGE=true bun run dev',
+    // In CI, use production server (assets already built), otherwise use dev server
+    command: process.env.CI ? 'bun run start' : 'COVERAGE=true bun run dev',
     url: 'http://localhost:3847',
     reuseExistingServer: !process.env.CI,
-    timeout: 30000,
+    timeout: process.env.CI ? 60000 : 30000, // Longer timeout for CI
   },
 });

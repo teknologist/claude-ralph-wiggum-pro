@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **E2E tests timing out in CI**: Updated Playwright config to use production server (`bun run start`) in CI instead of dev server, reducing E2E test time from 24+ minutes to ~10 seconds
+
 ## [2.3.1] - 2026-01-06
 
 ### Added
