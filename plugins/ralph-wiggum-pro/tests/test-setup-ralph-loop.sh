@@ -105,7 +105,6 @@ cleanup_state_files
 
 STATE_FILE=$(find_state_file_for_session "$CLAUDE_SESSION_ID")
 MISSING_FIELDS=""
-grep -q '^active:' "$STATE_FILE" || MISSING_FIELDS="$MISSING_FIELDS active"
 grep -q '^session_id:' "$STATE_FILE" || MISSING_FIELDS="$MISSING_FIELDS session_id"
 grep -q '^loop_id:' "$STATE_FILE" || MISSING_FIELDS="$MISSING_FIELDS loop_id"
 grep -q '^description:' "$STATE_FILE" || MISSING_FIELDS="$MISSING_FIELDS description"
