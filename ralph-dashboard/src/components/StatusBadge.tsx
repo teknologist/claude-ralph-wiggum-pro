@@ -54,6 +54,12 @@ export function StatusBadge({ status }: StatusBadgeProps) {
           Orphaned
         </span>
       );
+    case 'archived':
+      return (
+        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+          Archived
+        </span>
+      );
     default:
       return (
         <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">

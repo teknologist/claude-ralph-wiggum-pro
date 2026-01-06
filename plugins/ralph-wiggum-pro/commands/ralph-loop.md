@@ -11,6 +11,24 @@ Execute the setup script to initialize the Ralph loop:
 
 ```!
 "${CLAUDE_PLUGIN_ROOT}/scripts/setup-ralph-loop.sh" $ARGUMENTS
+SETUP_EXIT_CODE=$?
+
+# If setup failed (e.g., loop already active), stop here
+if [ $SETUP_EXIT_CODE -ne 0 ]; then
+  echo ""
+  echo "═══════════════════════════════════════════════════════════"
+  echo "STOP - Do not proceed with any task"
+  echo "═══════════════════════════════════════════════════════════"
+  echo "The setup script failed. Either:"
+  echo "  - A loop is already active (use --force to override)"
+  echo "  - Session ID is not available"
+  echo "  - Another error occurred"
+  echo ""
+  echo "READ THE ERROR ABOVE and wait for user instruction."
+  echo "Do NOT start working on any task."
+  echo "═══════════════════════════════════════════════════════════"
+  exit 1
+fi
 
 # Find state file for this session by scanning frontmatter
 # State files are in global directory: ~/.claude/ralph-wiggum-pro/loops/
@@ -59,8 +77,16 @@ if [ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ]; then
     echo "═══════════════════════════════════════════════════════════"
   fi
 fi
+
+# Success instruction - only shown when setup succeeded
+echo ""
+echo "Please work on the task. When you try to exit, the Ralph loop will feed"
+echo "the SAME PROMPT back to you for the next iteration. You'll see your"
+echo "previous work in files and git history, allowing you to iterate and improve."
+echo ""
+echo "CRITICAL RULE: If a completion promise is set, you may ONLY output it"
+echo "when the statement is completely and unequivocally TRUE. Do not output"
+echo "false promises to escape the loop, even if you think you're stuck or"
+echo "should exit for other reasons. The loop is designed to continue until"
+echo "genuine completion."
 ```
-
-Please work on the task. When you try to exit, the Ralph loop will feed the SAME PROMPT back to you for the next iteration. You'll see your previous work in files and git history, allowing you to iterate and improve.
-
-CRITICAL RULE: If a completion promise is set, you may ONLY output it when the statement is completely and unequivocally TRUE. Do not output false promises to escape the loop, even if you think you're stuck or should exit for other reasons. The loop is designed to continue until genuine completion.

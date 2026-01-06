@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.7] - 2026-01-06
+
+### Fixed
+- **Archive Orphaned Loop Button**: Fixed bug where archive button appeared to "do nothing"
+  - Root cause: Archive endpoint wrote `outcome: 'orphaned'` which mapped back to status `'orphaned'`, so session remained in Active tab with archive button still visible
+  - Fix: Changed archive outcome to `'archived'` - a new status type that moves sessions to Past tab
+  - Added `'archived'` to Session status and outcome types in both backend and frontend
+  - Added gray "Archived" status badge in StatusBadge component
+- **Stop Hook `stop_hook_active` Check**: Removed overly aggressive exit when `stop_hook_active=true`
+  - Root cause: Previous fix (v2.2.6) added check that prevented Ralph loops from continuing past first iteration
+  - Ralph loops are intentional and have their own safeguards (max_iterations, completion promise)
+  - The `stop_hook_active` flag is logged for debugging but no longer causes early exit
+- **Active Loop Blocking**: Fixed issue where starting a new loop while one is active didn't properly block
+  - Root cause: Setup script exited with error code 1, but bash block continued and final "work on task" instruction was always shown
+  - Fix: Added exit code check in ralph-loop.md command to stop execution and show clear STOP message when setup fails
+
 ## [2.2.6] - 2026-01-06
 
 ### Fixed

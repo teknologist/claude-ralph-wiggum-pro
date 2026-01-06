@@ -56,7 +56,7 @@ describe('handleArchiveSession', () => {
     expect(logParser.getSessionById).toHaveBeenCalledWith('loop-123');
     expect(fs.appendFileSync).toHaveBeenCalledWith(
       '/path/to/log.jsonl',
-      expect.stringContaining('"outcome":"orphaned"')
+      expect.stringContaining('"outcome":"archived"')
     );
   });
 
@@ -203,7 +203,7 @@ describe('handleArchiveSession', () => {
     expect(parsed.loop_id).toBe('loop-format-test');
     expect(parsed.session_id).toBe('session-format-test');
     expect(parsed.status).toBe('completed');
-    expect(parsed.outcome).toBe('orphaned');
+    expect(parsed.outcome).toBe('archived');
     expect(parsed.iterations).toBe(10);
     expect(parsed.ended_at).toBeDefined();
     expect(parsed.duration_seconds).toBeGreaterThanOrEqual(0);

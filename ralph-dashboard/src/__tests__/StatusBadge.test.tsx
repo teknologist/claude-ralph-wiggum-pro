@@ -53,6 +53,14 @@ describe('StatusBadge', () => {
     expect(badge).toHaveClass('bg-amber-100', 'text-amber-700');
   });
 
+  it('renders archived status', () => {
+    render(<StatusBadge status="archived" />);
+
+    expect(screen.getByText('Archived')).toBeInTheDocument();
+    const badge = screen.getByText('Archived');
+    expect(badge).toHaveClass('bg-gray-100', 'text-gray-600');
+  });
+
   it('renders unknown status for any other value', () => {
     // Cast to bypass type checking for edge case
     render(<StatusBadge status={'unknown-status' as Session['status']} />);

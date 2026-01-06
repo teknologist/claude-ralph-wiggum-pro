@@ -16,7 +16,13 @@ export interface CompletionLogEntry {
   loop_id: string; // Unique per loop invocation
   session_id: string; // Claude Code terminal session (for grouping)
   status: 'completed';
-  outcome: 'success' | 'max_iterations' | 'cancelled' | 'error' | 'orphaned';
+  outcome:
+    | 'success'
+    | 'max_iterations'
+    | 'cancelled'
+    | 'error'
+    | 'orphaned'
+    | 'archived';
   ended_at: string;
   duration_seconds: number;
   iterations: number;
@@ -35,8 +41,15 @@ export interface Session {
     | 'cancelled'
     | 'error'
     | 'max_iterations'
-    | 'orphaned';
-  outcome?: 'success' | 'cancelled' | 'error' | 'max_iterations' | 'orphaned';
+    | 'orphaned'
+    | 'archived';
+  outcome?:
+    | 'success'
+    | 'cancelled'
+    | 'error'
+    | 'max_iterations'
+    | 'orphaned'
+    | 'archived';
   project: string;
   project_name: string;
   state_file_path?: string; // Optional for backward compat with old entries

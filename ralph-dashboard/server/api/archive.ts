@@ -33,7 +33,7 @@ export function handleArchiveSession(loopId: string): Response {
       loop_id: session.loop_id,
       session_id: session.session_id,
       status: 'completed',
-      outcome: 'orphaned',
+      outcome: 'archived',
       ended_at: new Date().toISOString(),
       duration_seconds: Math.floor(
         (Date.now() - new Date(session.started_at).getTime()) / 1000

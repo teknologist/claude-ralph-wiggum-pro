@@ -143,12 +143,11 @@ debug_log "hook_input_session_id=$CURRENT_SESSION_ID"
 debug_log "stop_hook_active=$STOP_HOOK_ACTIVE"
 debug_log "CLAUDE_SESSION_ID_env=${CLAUDE_SESSION_ID:-not_set}"
 
-# Check stop_hook_active to prevent infinite loops (per Claude Code docs)
-# If Claude is already continuing due to a previous stop hook, allow exit
-if [[ "$STOP_HOOK_ACTIVE" == "true" ]]; then
-  debug_log "EXIT: stop_hook_active=true - preventing infinite loop"
-  exit 0
-fi
+# NOTE: We intentionally do NOT exit when stop_hook_active=true
+# Ralph loops are intentional - the user explicitly started them with /ralph-loop
+# The stop_hook_active flag is meant to prevent unintentional infinite loops,
+# but Ralph has its own safeguards (max_iterations, completion promise)
+# Exiting on stop_hook_active=true would break Ralph after the first iteration
 
 if [[ -z "$CURRENT_SESSION_ID" ]]; then
   # No session ID available - allow exit (shouldn't happen)
