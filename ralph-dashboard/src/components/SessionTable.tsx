@@ -86,14 +86,19 @@ export function SessionTable({
       {displaySessions.length > 0 ? (
         effectiveViewMode === 'card' ? (
           // Card Grid Layout (mobile or desktop card view)
-          <div className="p-3 sm:p-4 grid grid-cols-1 gap-3 sm:gap-4">
+          // Key includes activeTab to force React to unmount/remount when switching tabs
+          <div
+            key={activeTab}
+            className="p-3 sm:p-4 grid grid-cols-1 gap-3 sm:gap-4"
+          >
             {displaySessions.map((session) => (
               <SessionCard key={session.loop_id} session={session} />
             ))}
           </div>
         ) : (
           // Table Layout (desktop)
-          <div className="overflow-x-auto">
+          // Key includes activeTab to force React to unmount/remount when switching tabs
+          <div key={activeTab} className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>

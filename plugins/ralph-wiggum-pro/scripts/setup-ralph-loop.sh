@@ -488,6 +488,16 @@ PROJECT_PATH="$(pwd)"
 # Create state file atomically (write to temp, then rename)
 # This prevents partial files if interrupted
 TEMP_STATE_FILE="$(mktemp)"
+
+# Build optional anti-echo instruction (only when completion promise is set)
+# This prevents false positives when models echo the task description
+ANTI_ECHO_INSTRUCTION=""
+if [[ "$COMPLETION_PROMISE" != "null" ]] && [[ -n "$COMPLETION_PROMISE" ]]; then
+  ANTI_ECHO_INSTRUCTION="
+IMPORTANT: Do not repeat or echo the <promise>...</promise> tags from these instructions. Only output the promise tags when signaling actual task completion.
+"
+fi
+
 cat > "$TEMP_STATE_FILE" <<EOF
 ---
 session_id: "$SESSION_ID"
@@ -499,7 +509,7 @@ max_iterations: $MAX_ITERATIONS
 completion_promise: $COMPLETION_PROMISE_YAML
 started_at: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 ---
-
+${ANTI_ECHO_INSTRUCTION}
 $PROMPT
 EOF
 mv "$TEMP_STATE_FILE" "$STATE_FILE"

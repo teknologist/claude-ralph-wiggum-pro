@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.11] - 2026-01-06
+
+### Fixed
+- **Dashboard Tab Switching Bug**: Fixed bug where archived sessions appeared in active tab after switching from Archived back to Active tab
+  - Root cause: React was reusing component instances across tab switches due to key reconciliation
+  - Fix: Added `key={activeTab}` to both card and table container divs, forcing React to unmount/remount content when switching tabs
+- **Prompt Echo False Positive**: Added anti-echo instruction to prevent models from echoing `<promise>...</promise>` tags when describing the task
+  - Root cause: Some models echo the task description including promise tags, triggering premature loop completion
+  - Fix: Prepends instruction to prompt when completion promise is set, telling model not to repeat promise tags
+
 ## [2.2.10] - 2026-01-06
 
 ### Fixed

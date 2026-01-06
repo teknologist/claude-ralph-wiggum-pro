@@ -353,6 +353,12 @@ fi
 
 # Check for completion promise (only if set)
 if [[ "$COMPLETION_PROMISE" != "null" ]] && [[ -n "$COMPLETION_PROMISE" ]]; then
+  # Skip promise detection on iteration 1 (prevents false positives from prompt echo)
+  # Models sometimes echo the task description which includes <promise>...</promise> tags
+  # COMMENTED OUT: Testing instruction-only approach first
+  # if [[ "$ITERATION" -eq 1 ]]; then
+  #   debug_log "Skipping promise detection on iteration 1 (anti-echo protection)"
+  # else
   # IMPORTANT: Only check assistant messages AFTER this loop started
   # This prevents false positives from previous loops in the same session (after /clear)
   # The transcript is per-session and accumulates across /clear commands
@@ -409,6 +415,7 @@ if [[ "$COMPLETION_PROMISE" != "null" ]] && [[ -n "$COMPLETION_PROMISE" ]]; then
     debug_log "State file deleted: $RALPH_STATE_FILE"
     exit 0
   fi
+  # fi  # end iteration != 1 else block (COMMENTED OUT)
 fi
 
 # Not complete - continue loop with SAME PROMPT
