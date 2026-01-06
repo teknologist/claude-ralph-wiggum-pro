@@ -66,7 +66,7 @@ export interface Session {
   error_reason: string | null;
   // Checklist fields (optional)
   has_checklist: boolean;
-  checklist_progress: string | null; // e.g. "3/5 tasks • 1/2 criteria"
+  checklist_progress: string | null; // e.g. "2/4 criteria"
 }
 
 export interface SessionsResponse {
@@ -148,15 +148,11 @@ export interface Checklist {
   project_name: string;
   created_at: string;
   updated_at: string;
-  task_checklist: ChecklistItem[];
   completion_criteria: ChecklistItem[];
 }
 
 export interface ChecklistProgress {
-  tasks: string;
   criteria: string;
-  tasksCompleted: number;
-  tasksTotal: number;
   criteriaCompleted: number;
   criteriaTotal: number;
 }

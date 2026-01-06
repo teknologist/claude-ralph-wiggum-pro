@@ -1,7 +1,7 @@
 ---
 description: "Start Ralph Wiggum loop in current session"
 argument-hint: "PROMPT [--max-iterations N] [--completion-promise TEXT]"
-allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts/setup-ralph-loop.sh)"]
+allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts/setup-ralph-loop.sh)", "Bash(${CLAUDE_PLUGIN_ROOT}/scripts/checklist-service.sh)"]
 hide-from-slash-command-tool: "true"
 ---
 
@@ -76,6 +76,41 @@ if [ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ]; then
     echo "  true naturally. Do not force it by lying."
     echo "═══════════════════════════════════════════════════════════"
   fi
+
+  # Get loop_id for checklist operations
+  LOOP_ID=$(grep '^loop_id:' "$STATE_FILE" | sed 's/loop_id: *//' | sed 's/"//g')
+  CHECKLIST_SCRIPT="${CLAUDE_PLUGIN_ROOT}/scripts/checklist-service.sh"
+
+  echo ""
+  echo "═══════════════════════════════════════════════════════════"
+  echo "MANDATORY: CREATE ACCEPTANCE CRITERIA CHECKLIST"
+  echo "═══════════════════════════════════════════════════════════"
+  echo ""
+  echo "BEFORE starting work, you MUST create a checklist of acceptance"
+  echo "criteria. These are the conditions that must ALL be true before"
+  echo "you can output the completion promise."
+  echo ""
+  echo "1. ANALYZE the task and identify what 'done' means"
+  echo "2. DEFINE 3-6 specific, verifiable acceptance criteria"
+  echo "3. CREATE the checklist by running:"
+  echo ""
+  echo "   $CHECKLIST_SCRIPT checklist_init \"$LOOP_ID\" '<json>'"
+  echo ""
+  echo "JSON format:"
+  echo '   {"completion_criteria":[{"id":"c1","text":"..."},{"id":"c2","text":"..."}]}'
+  echo ""
+  echo "Example for 'Build a REST API with auth':"
+  echo '   {"completion_criteria":['
+  echo '     {"id":"c1","text":"API endpoints return 200 for valid requests"},'
+  echo '     {"id":"c2","text":"Authentication rejects invalid tokens"},'
+  echo '     {"id":"c3","text":"All tests pass"}]}'
+  echo ""
+  echo "IMPORTANT: The completion promise can ONLY be output when ALL"
+  echo "criteria are marked 'completed'. Update status as you verify:"
+  echo "   $CHECKLIST_SCRIPT checklist_status \"$LOOP_ID\" \"<id>\" \"completed\""
+  echo ""
+  echo "Dashboard displays progress in real-time."
+  echo "═══════════════════════════════════════════════════════════"
 fi
 
 # Success instruction - only shown when setup succeeded

@@ -32,32 +32,6 @@ const mockChecklistResponse: ChecklistResponse = {
     project_name: 'test-project',
     created_at: '2024-01-15T10:00:00Z',
     updated_at: '2024-01-15T10:00:00Z',
-    task_checklist: [
-      {
-        id: 'task-1',
-        text: 'First task',
-        status: 'completed',
-        created_at: '2024-01-15T10:00:00Z',
-        completed_at: '2024-01-15T10:30:00Z',
-        completed_iteration: 5,
-      },
-      {
-        id: 'task-2',
-        text: 'Second task',
-        status: 'in_progress',
-        created_at: '2024-01-15T10:00:00Z',
-        completed_at: null,
-        completed_iteration: null,
-      },
-      {
-        id: 'task-3',
-        text: 'Third task',
-        status: 'pending',
-        created_at: '2024-01-15T10:00:00Z',
-        completed_at: null,
-        completed_iteration: null,
-      },
-    ],
     completion_criteria: [
       {
         id: 'criteria-1',
@@ -70,6 +44,14 @@ const mockChecklistResponse: ChecklistResponse = {
       {
         id: 'criteria-2',
         text: 'Second criteria',
+        status: 'in_progress',
+        created_at: '2024-01-15T10:00:00Z',
+        completed_at: null,
+        completed_iteration: null,
+      },
+      {
+        id: 'criteria-3',
+        text: 'Third criteria',
         status: 'pending',
         created_at: '2024-01-15T10:00:00Z',
         completed_at: null,
@@ -78,12 +60,9 @@ const mockChecklistResponse: ChecklistResponse = {
     ],
   },
   progress: {
-    tasks: '1/3 tasks',
-    criteria: '1/2 criteria',
-    tasksCompleted: 1,
-    tasksTotal: 3,
+    criteria: '1/3 criteria',
     criteriaCompleted: 1,
-    criteriaTotal: 2,
+    criteriaTotal: 3,
   },
 };
 
@@ -122,7 +101,7 @@ describe('ChecklistProgress', () => {
         wrapper: createWrapper(),
       });
 
-      expect(screen.queryByText('Checklist Progress')).not.toBeInTheDocument();
+      expect(screen.queryByText('Acceptance Criteria')).not.toBeInTheDocument();
     });
   });
 
@@ -201,7 +180,7 @@ describe('ChecklistProgress', () => {
     });
   });
 
-  describe('with tasks and criteria', () => {
+  describe('with criteria', () => {
     it('renders checklist header', () => {
       mockUseChecklist.mockReturnValue({
         data: mockChecklistResponse,
@@ -215,7 +194,7 @@ describe('ChecklistProgress', () => {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByText('Checklist Progress')).toBeInTheDocument();
+      expect(screen.getByText('Acceptance Criteria')).toBeInTheDocument();
     });
 
     it('renders progress summary', () => {
@@ -231,25 +210,7 @@ describe('ChecklistProgress', () => {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByText('1/3 tasks • 1/2 criteria')).toBeInTheDocument();
-    });
-
-    it('renders all task items', () => {
-      mockUseChecklist.mockReturnValue({
-        data: mockChecklistResponse,
-        isLoading: false,
-        error: null,
-        isError: false,
-        refetch: vi.fn(),
-      } as any);
-
-      render(<ChecklistProgress loopId="test-loop" />, {
-        wrapper: createWrapper(),
-      });
-
-      expect(screen.getByText('First task')).toBeInTheDocument();
-      expect(screen.getByText('Second task')).toBeInTheDocument();
-      expect(screen.getByText('Third task')).toBeInTheDocument();
+      expect(screen.getByText('1/3 criteria')).toBeInTheDocument();
     });
 
     it('renders all criteria items', () => {
@@ -267,41 +228,7 @@ describe('ChecklistProgress', () => {
 
       expect(screen.getByText('First criteria')).toBeInTheDocument();
       expect(screen.getByText('Second criteria')).toBeInTheDocument();
-    });
-
-    it('renders Tasks section header', () => {
-      mockUseChecklist.mockReturnValue({
-        data: mockChecklistResponse,
-        isLoading: false,
-        error: null,
-        isError: false,
-        refetch: vi.fn(),
-      } as any);
-
-      render(<ChecklistProgress loopId="test-loop" />, {
-        wrapper: createWrapper(),
-      });
-
-      // The section header is a div with specific styling
-      // Using getAllByText since "tasks" appears multiple times
-      const taskHeaders = screen.getAllByText(/tasks/i);
-      expect(taskHeaders.length).toBeGreaterThan(0);
-    });
-
-    it('renders Completion Criteria section header', () => {
-      mockUseChecklist.mockReturnValue({
-        data: mockChecklistResponse,
-        isLoading: false,
-        error: null,
-        isError: false,
-        refetch: vi.fn(),
-      } as any);
-
-      render(<ChecklistProgress loopId="test-loop" />, {
-        wrapper: createWrapper(),
-      });
-
-      expect(screen.getByText(/completion criteria/i)).toBeInTheDocument();
+      expect(screen.getByText('Third criteria')).toBeInTheDocument();
     });
   });
 
@@ -371,14 +298,10 @@ describe('ChecklistProgress', () => {
           project_name: baseChecklist.project_name,
           created_at: baseChecklist.created_at,
           updated_at: baseChecklist.updated_at,
-          task_checklist: [],
           completion_criteria: [],
         },
         progress: {
-          tasks: '0/0 tasks',
           criteria: '0/0 criteria',
-          tasksCompleted: 0,
-          tasksTotal: 0,
           criteriaCompleted: 0,
           criteriaTotal: 0,
         },
@@ -396,51 +319,9 @@ describe('ChecklistProgress', () => {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByText('No checklist items yet')).toBeInTheDocument();
-    });
-
-    it('does not show section headers when empty', () => {
-      const baseChecklist = mockChecklistResponse.checklist;
-      if (!baseChecklist)
-        throw new Error('mockChecklistResponse.checklist is null');
-
-      const emptyResponse: ChecklistResponse = {
-        checklist: {
-          loop_id: baseChecklist.loop_id,
-          session_id: baseChecklist.session_id,
-          project: baseChecklist.project,
-          project_name: baseChecklist.project_name,
-          created_at: baseChecklist.created_at,
-          updated_at: baseChecklist.updated_at,
-          task_checklist: [],
-          completion_criteria: [],
-        },
-        progress: {
-          tasks: '0/0 tasks',
-          criteria: '0/0 criteria',
-          tasksCompleted: 0,
-          tasksTotal: 0,
-          criteriaCompleted: 0,
-          criteriaTotal: 0,
-        },
-      };
-
-      mockUseChecklist.mockReturnValue({
-        data: emptyResponse,
-        isLoading: false,
-        error: null,
-        isError: false,
-        refetch: vi.fn(),
-      } as any);
-
-      render(<ChecklistProgress loopId="test-loop" />, {
-        wrapper: createWrapper(),
-      });
-
-      expect(screen.queryByText(/tasks/i)).not.toBeInTheDocument();
       expect(
-        screen.queryByText(/completion criteria/i)
-      ).not.toBeInTheDocument();
+        screen.getByText('No acceptance criteria defined yet')
+      ).toBeInTheDocument();
     });
   });
 
@@ -476,16 +357,6 @@ describe('ChecklistProgress', () => {
           project_name: baseChecklist.project_name,
           created_at: baseChecklist.created_at,
           updated_at: baseChecklist.updated_at,
-          task_checklist: [
-            {
-              id: 'task-1',
-              text: 'Pending task',
-              status: 'pending',
-              created_at: '2024-01-15T10:00:00Z',
-              completed_at: null,
-              completed_iteration: null,
-            },
-          ],
           completion_criteria: [
             {
               id: 'criteria-1',
@@ -498,10 +369,7 @@ describe('ChecklistProgress', () => {
           ],
         },
         progress: {
-          tasks: '0/1 tasks',
           criteria: '0/1 criteria',
-          tasksCompleted: 0,
-          tasksTotal: 1,
           criteriaCompleted: 0,
           criteriaTotal: 1,
         },
@@ -539,51 +407,7 @@ describe('ChecklistProgress', () => {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByText('1/3 tasks • 1/2 criteria')).toBeInTheDocument();
-    });
-
-    it('shows 0/0 for empty checklist', () => {
-      const baseChecklist = mockChecklistResponse.checklist;
-      if (!baseChecklist)
-        throw new Error('mockChecklistResponse.checklist is null');
-
-      const emptyResponse: ChecklistResponse = {
-        checklist: {
-          loop_id: baseChecklist.loop_id,
-          session_id: baseChecklist.session_id,
-          project: baseChecklist.project,
-          project_name: baseChecklist.project_name,
-          created_at: baseChecklist.created_at,
-          updated_at: baseChecklist.updated_at,
-          task_checklist: [],
-          completion_criteria: [],
-        },
-        progress: {
-          tasks: '0/0 tasks',
-          criteria: '0/0 criteria',
-          tasksCompleted: 0,
-          tasksTotal: 0,
-          criteriaCompleted: 0,
-          criteriaTotal: 0,
-        },
-      };
-
-      mockUseChecklist.mockReturnValue({
-        data: emptyResponse,
-        isLoading: false,
-        error: null,
-        isError: false,
-        refetch: vi.fn(),
-      } as any);
-
-      render(<ChecklistProgress loopId="test-loop" />, {
-        wrapper: createWrapper(),
-      });
-
-      // The summary is not shown when there are no items
-      expect(
-        screen.queryByText('0/0 tasks • 0/0 criteria')
-      ).not.toBeInTheDocument();
+      expect(screen.getByText('1/3 criteria')).toBeInTheDocument();
     });
 
     it('hides progress summary when no items', () => {
@@ -599,14 +423,10 @@ describe('ChecklistProgress', () => {
           project_name: baseChecklist.project_name,
           created_at: baseChecklist.created_at,
           updated_at: baseChecklist.updated_at,
-          task_checklist: [],
           completion_criteria: [],
         },
         progress: {
-          tasks: '0/0 tasks',
           criteria: '0/0 criteria',
-          tasksCompleted: 0,
-          tasksTotal: 0,
           criteriaCompleted: 0,
           criteriaTotal: 0,
         },
@@ -625,7 +445,7 @@ describe('ChecklistProgress', () => {
       });
 
       // Progress summary should not be shown when there are no items
-      const progressSummary = screen.queryByText(/tasks.*criteria/);
+      const progressSummary = screen.queryByText(/\d+\/\d+ criteria/);
       expect(progressSummary).not.toBeInTheDocument();
     });
   });

@@ -64,11 +64,7 @@ export function getChecklist(loopId: string): Checklist | null {
     const checklist = JSON.parse(content) as Checklist;
 
     // Validate structure
-    if (
-      !checklist.loop_id ||
-      !checklist.task_checklist ||
-      !checklist.completion_criteria
-    ) {
+    if (!checklist.loop_id || !checklist.completion_criteria) {
       return null;
     }
 
@@ -83,21 +79,13 @@ export function getChecklist(loopId: string): Checklist | null {
  * Calculate progress summary from a checklist
  */
 export function getChecklistProgress(checklist: Checklist): ChecklistProgress {
-  const tasksTotal = checklist.task_checklist.length;
-  const tasksCompleted = checklist.task_checklist.filter(
-    (item) => item.status === 'completed'
-  ).length;
-
   const criteriaTotal = checklist.completion_criteria.length;
   const criteriaCompleted = checklist.completion_criteria.filter(
     (item) => item.status === 'completed'
   ).length;
 
   return {
-    tasks: `${tasksCompleted}/${tasksTotal} tasks`,
     criteria: `${criteriaCompleted}/${criteriaTotal} criteria`,
-    tasksCompleted,
-    tasksTotal,
     criteriaCompleted,
     criteriaTotal,
   };
@@ -171,8 +159,6 @@ export function isValidChecklist(data: unknown): data is Checklist {
     typeof check.project_name === 'string' &&
     typeof check.created_at === 'string' &&
     typeof check.updated_at === 'string' &&
-    Array.isArray(check.task_checklist) &&
-    check.task_checklist.every(isValidChecklistItem) &&
     Array.isArray(check.completion_criteria) &&
     check.completion_criteria.every(isValidChecklistItem)
   );

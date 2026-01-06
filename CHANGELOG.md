@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-01-06
+
+### Added
+- **Checklist Feature Integration**: Complete checklist workflow for tracking acceptance criteria
+  - **Directive instructions in ralph-loop.md**: Claude is instructed to create a checklist of 3-6 acceptance criteria before starting work
+  - **Real-time WebSocket updates**: Checklist changes broadcast to dashboard via WebSocket (same mechanism as transcript)
+  - **Dashboard UI**: Checklist displayed in right-side panel of SessionDetail component
+  - **Stop-hook status display**: Shows full acceptance criteria status with visual indicators (✓/◐/○) at each iteration
+  - **checklist_status_list()**: New function in checklist-service.sh for formatted status output
+
+### Changed
+- **Simplified checklist schema**: Removed `task_checklist` field, keeping only `completion_criteria`
+  - Updated all backend types, services, and API endpoints
+  - Updated frontend components and hooks
+  - Updated all test files to match simplified schema
+  - Progress tracking now shows only criteria count (e.g., "2/4 criteria")
+
+### Fixed
+- **WebSocket reconnection logic**: Now correctly considers checklist subscriptions when deciding to reconnect
+- **Memory leak in WebSocket disconnect()**: Now clears both iteration and checklist subscription maps on disconnect
+
 ## [2.2.11] - 2026-01-06
 
 ### Fixed

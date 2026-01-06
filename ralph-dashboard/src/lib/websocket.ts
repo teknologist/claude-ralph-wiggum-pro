@@ -1,11 +1,24 @@
-import type { IterationEntry } from '../../server/types';
+import type {
+  IterationEntry,
+  Checklist,
+  ChecklistProgress,
+} from '../../server/types';
 
 type IterationCallback = (iterations: IterationEntry[]) => void;
 type ErrorCallback = (message: string) => void;
 
+export interface ChecklistUpdate {
+  loopId: string;
+  checklist: Checklist;
+  progress: ChecklistProgress | null;
+}
+type ChecklistCallback = (data: ChecklistUpdate) => void;
+
 class TranscriptWebSocket {
   private ws: WebSocket | null = null;
   private subscriptions: Map<string, Set<IterationCallback>> = new Map();
+  private checklistSubscriptions: Map<string, Set<ChecklistCallback>> =
+    new Map();
   private errorCallbacks: Set<ErrorCallback> = new Set();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
@@ -54,6 +67,12 @@ class TranscriptWebSocket {
           const data = JSON.parse(event.data);
           if (data.type === 'iterations' && data.loopId && data.iterations) {
             this.handleIterations(data.loopId, data.iterations);
+          } else if (
+            data.type === 'checklist' &&
+            data.loopId &&
+            data.checklist
+          ) {
+            this.handleChecklist(data.loopId, data.checklist, data.progress);
           } else if (data.type === 'error' && data.message) {
             // Handle error messages from server (e.g., rate limiting)
             console.warn('WebSocket error from server:', data.message);
@@ -68,9 +87,10 @@ class TranscriptWebSocket {
         console.log(`WebSocket closed: ${event.code} ${event.reason}`);
         this.ws = null;
 
-        // Only reconnect if we still have subscriptions
+        // Only reconnect if we still have subscriptions (iterations or checklists)
         if (
-          this.subscriptions.size > 0 &&
+          (this.subscriptions.size > 0 ||
+            this.checklistSubscriptions.size > 0) &&
           this.reconnectAttempts < this.maxReconnectAttempts
         ) {
           // Use currentLoopId or first subscription to reconnect
@@ -127,6 +147,26 @@ class TranscriptWebSocket {
   }
 
   /**
+   * Handle incoming checklist update from WebSocket.
+   */
+  private handleChecklist(
+    loopId: string,
+    checklist: Checklist,
+    progress: ChecklistProgress | null
+  ): void {
+    const callbacks = this.checklistSubscriptions.get(loopId);
+    if (callbacks) {
+      callbacks.forEach((callback) => {
+        try {
+          callback({ loopId, checklist, progress });
+        } catch (error) {
+          console.error('Error in checklist callback:', error);
+        }
+      });
+    }
+  }
+
+  /**
    * Notify error callbacks of server errors.
    */
   private notifyError(message: string): void {
@@ -171,6 +211,40 @@ class TranscriptWebSocket {
   }
 
   /**
+   * Subscribe to checklist updates for a loopId.
+   * Returns an unsubscribe function.
+   */
+  subscribeChecklist(loopId: string, callback: ChecklistCallback): () => void {
+    // Add to subscriptions
+    if (!this.checklistSubscriptions.has(loopId)) {
+      this.checklistSubscriptions.set(loopId, new Set());
+    }
+    this.checklistSubscriptions.get(loopId)!.add(callback);
+
+    // Connect if not already connected (checklist uses same WebSocket)
+    this.connect(loopId);
+
+    // Return unsubscribe function
+    return () => {
+      const callbacks = this.checklistSubscriptions.get(loopId);
+      if (callbacks) {
+        callbacks.delete(callback);
+        if (callbacks.size === 0) {
+          this.checklistSubscriptions.delete(loopId);
+        }
+      }
+
+      // Close WebSocket if no more subscriptions of any type
+      if (
+        this.subscriptions.size === 0 &&
+        this.checklistSubscriptions.size === 0
+      ) {
+        this.disconnect();
+      }
+    };
+  }
+
+  /**
    * Register an error callback for server-side errors.
    */
   onError(callback: ErrorCallback): () => void {
@@ -194,6 +268,9 @@ class TranscriptWebSocket {
       this.ws = null;
     }
 
+    // Clear all subscriptions to prevent memory leaks
+    this.subscriptions.clear();
+    this.checklistSubscriptions.clear();
     this.currentLoopId = null;
     this.reconnectAttempts = 0;
   }
@@ -218,4 +295,15 @@ export function subscribeToTranscript(
   onIterations: IterationCallback
 ): () => void {
   return transcriptWebSocket.subscribe(loopId, onIterations);
+}
+
+/**
+ * Subscribe to checklist updates for a loopId.
+ * Returns an unsubscribe function.
+ */
+export function subscribeToChecklist(
+  loopId: string,
+  onChecklist: ChecklistCallback
+): () => void {
+  return transcriptWebSocket.subscribeChecklist(loopId, onChecklist);
 }

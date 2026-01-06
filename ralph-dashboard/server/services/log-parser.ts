@@ -253,9 +253,7 @@ export function mergeSessions(entries: LogEntry[]): Session[] {
       const checklistResult = getChecklistWithProgress(loop_id);
       if (checklistResult.checklist) {
         hasChecklist = true;
-        checklistProgress = checklistResult.progress
-          ? `${checklistResult.progress.tasks} • ${checklistResult.progress.criteria}`
-          : null;
+        checklistProgress = checklistResult.progress?.criteria ?? null;
       }
     } catch {
       // Ignore errors reading checklist

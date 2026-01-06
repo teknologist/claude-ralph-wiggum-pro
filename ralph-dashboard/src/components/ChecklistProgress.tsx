@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 
 interface ChecklistProgressProps {
   loopId: string;
+  isActive?: boolean;
 }
 
 const statusConfig: Record<
@@ -121,26 +122,28 @@ function ChecklistItemRow({
   );
 }
 
-export function ChecklistProgress({ loopId }: ChecklistProgressProps) {
-  const { data, isLoading, error, isError } = useChecklist(loopId);
+export function ChecklistProgress({
+  loopId,
+  isActive = false,
+}: ChecklistProgressProps) {
+  const { data, isLoading, error, isError } = useChecklist(
+    loopId,
+    true,
+    isActive
+  );
 
-  const { progressSummary, tasksCount, criteriaCount } = useMemo(() => {
+  const { progressSummary, criteriaCount } = useMemo(() => {
     if (!data?.checklist) {
-      return { progressSummary: '', tasksCount: 0, criteriaCount: 0 };
+      return { progressSummary: '', criteriaCount: 0 };
     }
 
-    const tasksCompleted = data.checklist.task_checklist.filter(
-      (item) => item.status === 'completed'
-    ).length;
-    const tasksTotal = data.checklist.task_checklist.length;
     const criteriaCompleted = data.checklist.completion_criteria.filter(
       (item) => item.status === 'completed'
     ).length;
     const criteriaTotal = data.checklist.completion_criteria.length;
 
     return {
-      progressSummary: `${tasksCompleted}/${tasksTotal} tasks • ${criteriaCompleted}/${criteriaTotal} criteria`,
-      tasksCount: tasksTotal,
+      progressSummary: `${criteriaCompleted}/${criteriaTotal} criteria`,
       criteriaCount: criteriaTotal,
     };
   }, [data]);
@@ -172,7 +175,7 @@ export function ChecklistProgress({ loopId }: ChecklistProgressProps) {
     return null;
   }
 
-  const hasItems = tasksCount > 0 || criteriaCount > 0;
+  const hasItems = criteriaCount > 0;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -191,7 +194,7 @@ export function ChecklistProgress({ loopId }: ChecklistProgressProps) {
                 clipRule="evenodd"
               />
             </svg>
-            Checklist Progress
+            Acceptance Criteria
           </h3>
           {hasItems && (
             <span className="text-sm font-medium text-claude-coral">
@@ -201,40 +204,16 @@ export function ChecklistProgress({ loopId }: ChecklistProgressProps) {
         </div>
       </div>
 
-      {/* Checklist items */}
+      {/* Acceptance Criteria */}
       {hasItems ? (
         <div className="divide-y divide-gray-100">
-          {/* Tasks section */}
-          {tasksCount > 0 && (
-            <div>
-              <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                Tasks
-              </div>
-              <div className="divide-y divide-gray-100">
-                {data.checklist.task_checklist.map((item) => (
-                  <ChecklistItemRow key={item.id} item={item} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Completion criteria section */}
-          {criteriaCount > 0 && (
-            <div>
-              <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600 uppercase tracking-wide border-t border-gray-200">
-                Completion Criteria
-              </div>
-              <div className="divide-y divide-gray-100">
-                {data.checklist.completion_criteria.map((item) => (
-                  <ChecklistItemRow key={item.id} item={item} />
-                ))}
-              </div>
-            </div>
-          )}
+          {data.checklist.completion_criteria.map((item) => (
+            <ChecklistItemRow key={item.id} item={item} />
+          ))}
         </div>
       ) : (
         <div className="px-4 py-3 text-sm text-gray-500 italic">
-          No checklist items yet
+          No acceptance criteria defined yet
         </div>
       )}
     </div>

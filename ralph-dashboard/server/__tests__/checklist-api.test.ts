@@ -18,28 +18,18 @@ describe('handleGetChecklist', () => {
     project_name: 'test-project',
     created_at: '2024-01-15T10:00:00Z',
     updated_at: '2024-01-15T10:00:00Z',
-    task_checklist: [
+    completion_criteria: [
       {
-        id: 'task-1',
-        text: 'First task',
+        id: 'criteria-1',
+        text: 'First criteria',
         status: 'completed',
         created_at: '2024-01-15T10:00:00Z',
         completed_at: '2024-01-15T10:30:00Z',
         completed_iteration: 5,
       },
       {
-        id: 'task-2',
-        text: 'Second task',
-        status: 'in_progress',
-        created_at: '2024-01-15T10:00:00Z',
-        completed_at: null,
-        completed_iteration: null,
-      },
-    ],
-    completion_criteria: [
-      {
-        id: 'criteria-1',
-        text: 'First criteria',
+        id: 'criteria-2',
+        text: 'Second criteria',
         status: 'pending',
         created_at: '2024-01-15T10:00:00Z',
         completed_at: null,
@@ -57,12 +47,9 @@ describe('handleGetChecklist', () => {
       mockGetChecklistWithProgress.mockReturnValue({
         checklist: validChecklist,
         progress: {
-          tasks: '1/2 tasks',
-          criteria: '0/1 criteria',
-          tasksCompleted: 1,
-          tasksTotal: 2,
-          criteriaCompleted: 0,
-          criteriaTotal: 1,
+          criteria: '1/2 criteria',
+          criteriaCompleted: 1,
+          criteriaTotal: 2,
         },
       });
 
@@ -73,12 +60,9 @@ describe('handleGetChecklist', () => {
       expect(data).toEqual({
         checklist: validChecklist,
         progress: {
-          tasks: '1/2 tasks',
-          criteria: '0/1 criteria',
-          tasksCompleted: 1,
-          tasksTotal: 2,
-          criteriaCompleted: 0,
-          criteriaTotal: 1,
+          criteria: '1/2 criteria',
+          criteriaCompleted: 1,
+          criteriaTotal: 2,
         },
       });
       expect(mockGetChecklistWithProgress).toHaveBeenCalledWith(
@@ -89,12 +73,6 @@ describe('handleGetChecklist', () => {
     it('returns checklist with all completed items', async () => {
       const completedChecklist: Checklist = {
         ...validChecklist,
-        task_checklist: validChecklist.task_checklist.map((item) => ({
-          ...item,
-          status: 'completed' as const,
-          completed_at: '2024-01-15T10:30:00Z',
-          completed_iteration: 10,
-        })),
         completion_criteria: validChecklist.completion_criteria.map((item) => ({
           ...item,
           status: 'completed' as const,
@@ -106,12 +84,9 @@ describe('handleGetChecklist', () => {
       mockGetChecklistWithProgress.mockReturnValue({
         checklist: completedChecklist,
         progress: {
-          tasks: '2/2 tasks',
-          criteria: '1/1 criteria',
-          tasksCompleted: 2,
-          tasksTotal: 2,
-          criteriaCompleted: 1,
-          criteriaTotal: 1,
+          criteria: '2/2 criteria',
+          criteriaCompleted: 2,
+          criteriaTotal: 2,
         },
       });
 
@@ -119,11 +94,6 @@ describe('handleGetChecklist', () => {
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(
-        data.checklist.task_checklist.every(
-          (t: { status: string }) => t.status === 'completed'
-        )
-      ).toBe(true);
       expect(
         data.checklist.completion_criteria.every(
           (c: { status: string }) => c.status === 'completed'
@@ -134,17 +104,13 @@ describe('handleGetChecklist', () => {
     it('returns checklist with empty arrays', async () => {
       const emptyChecklist: Checklist = {
         ...validChecklist,
-        task_checklist: [],
         completion_criteria: [],
       };
 
       mockGetChecklistWithProgress.mockReturnValue({
         checklist: emptyChecklist,
         progress: {
-          tasks: '0/0 tasks',
           criteria: '0/0 criteria',
-          tasksCompleted: 0,
-          tasksTotal: 0,
           criteriaCompleted: 0,
           criteriaTotal: 0,
         },
@@ -154,19 +120,12 @@ describe('handleGetChecklist', () => {
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.checklist.task_checklist).toEqual([]);
       expect(data.checklist.completion_criteria).toEqual([]);
     });
 
     it('returns checklist with pending items only', async () => {
       const pendingChecklist: Checklist = {
         ...validChecklist,
-        task_checklist: validChecklist.task_checklist.map((item) => ({
-          ...item,
-          status: 'pending' as const,
-          completed_at: null,
-          completed_iteration: null,
-        })),
         completion_criteria: validChecklist.completion_criteria.map((item) => ({
           ...item,
           status: 'pending' as const,
@@ -178,12 +137,9 @@ describe('handleGetChecklist', () => {
       mockGetChecklistWithProgress.mockReturnValue({
         checklist: pendingChecklist,
         progress: {
-          tasks: '0/2 tasks',
-          criteria: '0/1 criteria',
-          tasksCompleted: 0,
-          tasksTotal: 2,
+          criteria: '0/2 criteria',
           criteriaCompleted: 0,
-          criteriaTotal: 1,
+          criteriaTotal: 2,
         },
       });
 
@@ -191,7 +147,6 @@ describe('handleGetChecklist', () => {
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.progress.tasksCompleted).toBe(0);
       expect(data.progress.criteriaCompleted).toBe(0);
     });
   });
@@ -376,12 +331,9 @@ describe('handleGetChecklist', () => {
       mockGetChecklistWithProgress.mockReturnValue({
         checklist: validChecklist,
         progress: {
-          tasks: '1/2 tasks',
-          criteria: '0/1 criteria',
-          tasksCompleted: 1,
-          tasksTotal: 2,
-          criteriaCompleted: 0,
-          criteriaTotal: 1,
+          criteria: '1/2 criteria',
+          criteriaCompleted: 1,
+          criteriaTotal: 2,
         },
       });
 
@@ -396,12 +348,9 @@ describe('handleGetChecklist', () => {
       mockGetChecklistWithProgress.mockReturnValue({
         checklist: validChecklist,
         progress: {
-          tasks: '1/2 tasks',
-          criteria: '0/1 criteria',
-          tasksCompleted: 1,
-          tasksTotal: 2,
-          criteriaCompleted: 0,
-          criteriaTotal: 1,
+          criteria: '1/2 criteria',
+          criteriaCompleted: 1,
+          criteriaTotal: 2,
         },
       });
 
@@ -417,12 +366,9 @@ describe('handleGetChecklist', () => {
       mockGetChecklistWithProgress.mockReturnValue({
         checklist: validChecklist,
         progress: {
-          tasks: '1/2 tasks',
-          criteria: '0/1 criteria',
-          tasksCompleted: 1,
-          tasksTotal: 2,
-          criteriaCompleted: 0,
-          criteriaTotal: 1,
+          criteria: '1/2 criteria',
+          criteriaCompleted: 1,
+          criteriaTotal: 2,
         },
       });
 

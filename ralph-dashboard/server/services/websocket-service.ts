@@ -6,12 +6,14 @@ import {
   closeSync,
   existsSync,
   mkdirSync,
+  statSync,
 } from 'fs';
 import { join } from 'path';
 import type { ServerWebSocket } from 'bun';
 import type { IterationEntry } from './transcript-service';
 import type { WebSocketData } from '../types';
 import { findFileByLoopId, getTranscriptsDir } from './file-finder.js';
+import { getChecklistWithProgress } from './checklist-service.js';
 
 interface FileWatchState {
   watcher: FSWatcher | null;
@@ -20,6 +22,11 @@ interface FileWatchState {
   clients: Set<ServerWebSocket<WebSocketData>>;
   watchingDirectory: boolean; // Track if we're watching parent dir for file creation
   filePath: string | null; // Store resolved file path
+  // Checklist watching state
+  checklistWatcher: FSWatcher | null;
+  checklistLastModified: number;
+  checklistDebounceTimer: ReturnType<typeof setTimeout> | null;
+  checklistFilePath: string | null;
 }
 
 // Track active watchers by loopId
@@ -143,6 +150,132 @@ function broadcastIterations(
 }
 
 /**
+ * Find the checklist file path for a loop.
+ */
+function findChecklistFilePath(loopId: string): string | null {
+  return findFileByLoopId(loopId, 'checklist.json');
+}
+
+/**
+ * Broadcast checklist update to all clients subscribed to a loopId.
+ */
+function broadcastChecklist(loopId: string): void {
+  const state = watchers.get(loopId);
+  if (!state) return;
+
+  const checklistData = getChecklistWithProgress(loopId);
+  if (!checklistData.checklist) return;
+
+  const message = JSON.stringify({
+    type: 'checklist',
+    loopId,
+    checklist: checklistData.checklist,
+    progress: checklistData.progress,
+  });
+
+  for (const client of state.clients) {
+    // Check if WebSocket is open (readyState 1 = OPEN)
+    if (client.readyState !== 1) {
+      state.clients.delete(client);
+      continue;
+    }
+    try {
+      client.send(message);
+    } catch (error) {
+      console.error('Error sending checklist to WebSocket client:', error);
+      state.clients.delete(client);
+    }
+  }
+}
+
+/**
+ * Handle checklist file change with debouncing.
+ */
+function handleChecklistChange(loopId: string): void {
+  const state = watchers.get(loopId);
+  if (!state) return;
+
+  // Clear existing debounce timer
+  if (state.checklistDebounceTimer) {
+    clearTimeout(state.checklistDebounceTimer);
+  }
+
+  // Debounce to avoid rapid successive reads
+  state.checklistDebounceTimer = setTimeout(() => {
+    broadcastChecklist(loopId);
+    state.checklistDebounceTimer = null;
+  }, DEBOUNCE_MS);
+}
+
+/**
+ * Start watching a checklist file for a loopId.
+ */
+function setupChecklistWatcher(loopId: string, state: FileWatchState): void {
+  // Stop existing watcher if any
+  if (state.checklistWatcher) {
+    state.checklistWatcher.close();
+    state.checklistWatcher = null;
+  }
+
+  const checklistPath = findChecklistFilePath(loopId);
+
+  if (checklistPath && existsSync(checklistPath)) {
+    // File exists - watch it directly
+    try {
+      const stats = statSync(checklistPath);
+      state.checklistLastModified = stats.mtimeMs;
+    } catch (error) {
+      console.debug(`Could not stat checklist file ${checklistPath}:`, error);
+      state.checklistLastModified = 0;
+    }
+
+    state.checklistFilePath = checklistPath;
+    state.checklistWatcher = watch(
+      checklistPath,
+      { persistent: false },
+      (eventType) => {
+        if (eventType === 'change') {
+          handleChecklistChange(loopId);
+        }
+      }
+    );
+
+    state.checklistWatcher.on('error', (error) => {
+      console.error(`Checklist watcher error for ${loopId}:`, error);
+    });
+
+    console.log(`Started checklist watcher for loop: ${loopId}`);
+  } else {
+    // File doesn't exist yet - we'll watch the directory for file creation
+    // This is handled by the directory watcher below
+    state.checklistFilePath = null;
+  }
+}
+
+/**
+ * Handle directory change for checklist file creation.
+ */
+function handleDirectoryChangeForChecklist(
+  loopId: string,
+  filename: string | null
+): void {
+  const state = watchers.get(loopId);
+  if (!state) return;
+
+  // Check if a checklist file was created
+  if (
+    filename &&
+    filename.endsWith('-checklist.json') &&
+    filename.includes(loopId)
+  ) {
+    // Checklist file was created - set up watcher
+    setupChecklistWatcher(loopId, state);
+    // Broadcast initial checklist data
+    handleChecklistChange(loopId);
+  }
+}
+
+/**
  * Handle file change with debouncing.
  */
 function handleFileChange(loopId: string, filePath: string): void {
@@ -173,7 +306,13 @@ function handleDirectoryChange(
   filename: string | null
 ): void {
   const state = watchers.get(loopId);
-  if (!state || !state.watchingDirectory) return;
+  if (!state) return;
+
+  // Also check for checklist file creation
+  handleDirectoryChangeForChecklist(loopId, filename);
+
+  // Skip iterations file handling if not watching directory
+  if (!state.watchingDirectory) return;
 
   // Check if the target file was created (matches suffix pattern)
   if (filename && filename.endsWith(targetSuffix)) {
@@ -319,9 +458,17 @@ export function subscribeToLoop(
       clients: new Set(),
       watchingDirectory,
       filePath,
+      // Checklist watching state
+      checklistWatcher: null,
+      checklistLastModified: 0,
+      checklistDebounceTimer: null,
+      checklistFilePath: null,
     };
 
     watchers.set(loopId, state);
+
+    // Set up checklist watcher
+    setupChecklistWatcher(loopId, state);
   }
 
   state.clients.add(client);
@@ -356,8 +503,17 @@ export function unsubscribeFromLoop(
     if (state.watcher) {
       state.watcher.close();
     }
+    // Clean up checklist watcher
+    if (state.checklistDebounceTimer) {
+      clearTimeout(state.checklistDebounceTimer);
+    }
+    if (state.checklistWatcher) {
+      state.checklistWatcher.close();
+    }
     watchers.delete(loopId);
-    console.log(`Stopped watching transcript for loop: ${loopId}`);
+    console.log(
+      `Stopped watching transcript and checklist for loop: ${loopId}`
+    );
   }
 }
 
@@ -392,7 +548,14 @@ export function cleanupAllWatchers(): void {
     if (state.watcher) {
       state.watcher.close();
     }
+    // Clean up checklist watchers
+    if (state.checklistDebounceTimer) {
+      clearTimeout(state.checklistDebounceTimer);
+    }
+    if (state.checklistWatcher) {
+      state.checklistWatcher.close();
+    }
   }
   watchers.clear();
-  console.log('All transcript watchers cleaned up');
+  console.log('All transcript and checklist watchers cleaned up');
 }

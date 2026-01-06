@@ -478,15 +478,18 @@ fi
 CHECKLIST_INSTRUCTION=""
 if [[ -n "$LOOP_ID" ]] && declare -f checklist_exists > /dev/null && checklist_exists "$LOOP_ID"; then
   CHECKLIST_SUMMARY=$(checklist_summary "$LOOP_ID" 2>/dev/null || echo "")
+  CHECKLIST_STATUS_LIST=$(checklist_status_list "$LOOP_ID" 2>/dev/null || echo "")
+
   CHECKLIST_INSTRUCTION="
 
-CHECKLIST PROGRESS: $CHECKLIST_SUMMARY
-To update checklist items:
-  checklist_status \"$LOOP_ID\" \"<item_id>\" \"<status>\" [iteration]
-  To add new items:
-  checklist_add \"$LOOP_ID\" \"task|criteria\" \"<id>\" \"<text>\"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ACCEPTANCE CRITERIA ($CHECKLIST_SUMMARY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+$CHECKLIST_STATUS_LIST
 
-  Status values: pending | in_progress | completed"
+To update: checklist_status \"$LOOP_ID\" \"<id>\" \"completed\" $NEXT_ITERATION
+To add: checklist_add \"$LOOP_ID\" \"<id>\" \"<text>\"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 fi
 
 # Build system message with iteration count, elapsed time, completion promise, and checklist info

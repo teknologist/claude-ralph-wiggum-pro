@@ -24,28 +24,18 @@ const mockChecklistResponse: ChecklistResponse = {
     project_name: 'test-project',
     created_at: '2024-01-15T10:00:00Z',
     updated_at: '2024-01-15T10:00:00Z',
-    task_checklist: [
+    completion_criteria: [
       {
-        id: 'task-1',
-        text: 'First task',
+        id: 'criteria-1',
+        text: 'First criteria',
         status: 'completed',
         created_at: '2024-01-15T10:00:00Z',
         completed_at: '2024-01-15T10:30:00Z',
         completed_iteration: 5,
       },
       {
-        id: 'task-2',
-        text: 'Second task',
-        status: 'in_progress',
-        created_at: '2024-01-15T10:00:00Z',
-        completed_at: null,
-        completed_iteration: null,
-      },
-    ],
-    completion_criteria: [
-      {
-        id: 'criteria-1',
-        text: 'First criteria',
+        id: 'criteria-2',
+        text: 'Second criteria',
         status: 'pending',
         created_at: '2024-01-15T10:00:00Z',
         completed_at: null,
@@ -54,12 +44,9 @@ const mockChecklistResponse: ChecklistResponse = {
     ],
   },
   progress: {
-    tasks: '1/2 tasks',
-    criteria: '0/1 criteria',
-    tasksCompleted: 1,
-    tasksTotal: 2,
-    criteriaCompleted: 0,
-    criteriaTotal: 1,
+    criteria: '1/2 criteria',
+    criteriaCompleted: 1,
+    criteriaTotal: 2,
   },
 };
 
@@ -106,10 +93,10 @@ describe('useChecklist', () => {
       expect(result.current.data?.checklist).toBeDefined();
       expect(result.current.data?.progress).toBeDefined();
       expect(result.current.data?.checklist?.loop_id).toBe('test-loop-123');
-      expect(result.current.data?.progress?.tasks).toBe('1/2 tasks');
+      expect(result.current.data?.progress?.criteria).toBe('1/2 criteria');
     });
 
-    it('returns task and criteria arrays', async () => {
+    it('returns criteria array', async () => {
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: true,
         json: async () => mockChecklistResponse,
@@ -123,9 +110,8 @@ describe('useChecklist', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(result.current.data?.checklist?.task_checklist).toHaveLength(2);
       expect(result.current.data?.checklist?.completion_criteria).toHaveLength(
-        1
+        2
       );
     });
 
@@ -142,14 +128,10 @@ describe('useChecklist', () => {
           project_name: baseChecklist.project_name,
           created_at: baseChecklist.created_at,
           updated_at: baseChecklist.updated_at,
-          task_checklist: [],
           completion_criteria: [],
         },
         progress: {
-          tasks: '0/0 tasks',
           criteria: '0/0 criteria',
-          tasksCompleted: 0,
-          tasksTotal: 0,
           criteriaCompleted: 0,
           criteriaTotal: 0,
         },
@@ -168,7 +150,6 @@ describe('useChecklist', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(result.current.data?.checklist?.task_checklist).toEqual([]);
       expect(result.current.data?.checklist?.completion_criteria).toEqual([]);
     });
   });

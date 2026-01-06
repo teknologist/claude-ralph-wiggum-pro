@@ -94,11 +94,18 @@ export function SessionDetail({
           />
         </div>
 
-        {/* Checklist Progress - shown if checklist exists */}
-        {session.has_checklist && (
+        {/* Acceptance Criteria Progress - shown for active sessions or if checklist exists */}
+        {(session.has_checklist ||
+          session.status === 'active' ||
+          session.status === 'orphaned') && (
           <div className="md:col-span-2 mt-3 sm:mt-4">
             <ErrorBoundary>
-              <ChecklistProgress loopId={session.loop_id} />
+              <ChecklistProgress
+                loopId={session.loop_id}
+                isActive={
+                  session.status === 'active' || session.status === 'orphaned'
+                }
+              />
             </ErrorBoundary>
           </div>
         )}
