@@ -66,8 +66,8 @@ MONITORING:
   # List all active loops:
   /list-ralph-loops
 
-  # View your session's state:
-  cat ~/.claude/ralph-wiggum-pro/loops/ralph-loop.${CLAUDE_SESSION_ID}.local.md
+  # View your session's state (replace <session_id> with your actual session ID):
+  cat ~/.claude/ralph-wiggum-pro/loops/ralph-loop.<session_id>.local.md
 HELP_EOF
       exit 0
       ;;
@@ -382,8 +382,12 @@ if [[ -f "$STATE_FILE" ]]; then
   fi
 fi
 
-# Generate 5-char loop_id for transcript uniqueness
-LOOP_ID="$(head -c 5 /dev/urandom | xxd -p | head -c 5)"
+# Generate 8-char loop_id for transcript uniqueness (32 bits of entropy)
+LOOP_ID="$(head -c 8 /dev/urandom | xxd -p 2>/dev/null | head -c 8)"
+if [[ -z "$LOOP_ID" ]]; then
+  # Fallback for systems without xxd (part of vim, not coreutils)
+  LOOP_ID="$(od -An -tx1 -N4 /dev/urandom | tr -d ' \n' | head -c 8)"
+fi
 
 # Generate description from first 60 chars of prompt
 DESCRIPTION=$(echo "$PROMPT" | tr '\n' ' ' | head -c 60)
@@ -400,8 +404,10 @@ fi
 
 PROJECT_PATH="$(pwd)"
 
-# Create state file (no 'active' field - file existence = active)
-cat > "$STATE_FILE" <<EOF
+# Create state file atomically (write to temp, then rename)
+# This prevents partial files if interrupted
+TEMP_STATE_FILE="$(mktemp)"
+cat > "$TEMP_STATE_FILE" <<EOF
 ---
 session_id: "$SESSION_ID"
 loop_id: "$LOOP_ID"
@@ -415,6 +421,7 @@ started_at: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 $PROMPT
 EOF
+mv "$TEMP_STATE_FILE" "$STATE_FILE"
 
 # Log session start to history
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

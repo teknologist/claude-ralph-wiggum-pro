@@ -5,25 +5,13 @@ import {
   fstatSync,
   closeSync,
   existsSync,
-  readdirSync,
+  mkdirSync,
 } from 'fs';
-import { homedir } from 'os';
 import { join } from 'path';
 import type { ServerWebSocket } from 'bun';
 import type { IterationEntry } from './transcript-service';
 import type { WebSocketData } from '../types';
-
-// Global paths
-const RALPH_BASE_DIR = join(homedir(), '.claude', 'ralph-wiggum-pro');
-const TRANSCRIPT_DIR = join(RALPH_BASE_DIR, 'transcripts');
-
-// Old path for backward compatibility
-const OLD_TRANSCRIPT_DIR = join(
-  homedir(),
-  '.claude',
-  'ralph-wiggum-pro-logs',
-  'transcripts'
-);
+import { findFileByLoopId, getTranscriptsDir } from './file-finder.js';
 
 interface FileWatchState {
   watcher: FSWatcher | null;
@@ -45,37 +33,10 @@ const MAX_SUBSCRIPTIONS_PER_CLIENT = 10;
 
 /**
  * Find the iterations file path for a loop.
- * Handles both new naming ({session_id}-{loop_id}-iterations.jsonl) and
- * old naming ({loop_id}-iterations.jsonl).
+ * Uses shared file-finder utility.
  */
 function findIterationsFilePath(loopId: string): string | null {
-  // Try new directory with glob pattern
-  if (existsSync(TRANSCRIPT_DIR)) {
-    const files = readdirSync(TRANSCRIPT_DIR);
-    const match = files.find(
-      (f) =>
-        f.endsWith(`-${loopId}-iterations.jsonl`) ||
-        f === `${loopId}-iterations.jsonl`
-    );
-    if (match) {
-      return join(TRANSCRIPT_DIR, match);
-    }
-  }
-
-  // Try old directory (backward compatibility)
-  if (existsSync(OLD_TRANSCRIPT_DIR)) {
-    const files = readdirSync(OLD_TRANSCRIPT_DIR);
-    const match = files.find(
-      (f) =>
-        f.endsWith(`-${loopId}-iterations.jsonl`) ||
-        f === `${loopId}-iterations.jsonl`
-    );
-    if (match) {
-      return join(OLD_TRANSCRIPT_DIR, match);
-    }
-  }
-
-  return null;
+  return findFileByLoopId(loopId, 'iterations.jsonl');
 }
 
 /**
@@ -88,7 +49,7 @@ function getIterationsWatchTarget(loopId: string): {
 } {
   // Prefer new directory
   return {
-    dir: TRANSCRIPT_DIR,
+    dir: getTranscriptsDir(),
     suffix: `-${loopId}-iterations.jsonl`,
   };
 }
@@ -216,7 +177,7 @@ function handleDirectoryChange(
 
   // Check if the target file was created (matches suffix pattern)
   if (filename && filename.endsWith(targetSuffix)) {
-    const filePath = join(TRANSCRIPT_DIR, filename);
+    const filePath = join(getTranscriptsDir(), filename);
 
     // Switch from directory watching to file watching
     if (state.watcher) {
@@ -323,8 +284,7 @@ export function subscribeToLoop(
       // Ensure directory exists
       if (!existsSync(dir)) {
         try {
-          const fs = require('fs');
-          fs.mkdirSync(dir, { recursive: true });
+          mkdirSync(dir, { recursive: true });
         } catch {
           // Ignore - directory may have been created by another process
         }

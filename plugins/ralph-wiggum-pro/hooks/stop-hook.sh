@@ -21,9 +21,26 @@ DEBUG_LOG="$LOGS_DIR/debug.log"
 # Ensure directories exist
 mkdir -p "$LOOPS_DIR" "$LOGS_DIR" "$TRANSCRIPTS_DIR"
 
-# Debug logging helper
+# Maximum debug log size (1MB)
+MAX_DEBUG_LOG_SIZE=1048576
+
+# Rotate debug log if it exceeds maximum size
+rotate_debug_log_if_needed() {
+  if [[ -f "$DEBUG_LOG" ]]; then
+    local size
+    size=$(stat -f%z "$DEBUG_LOG" 2>/dev/null || stat -c%s "$DEBUG_LOG" 2>/dev/null || echo "0")
+    if [[ "$size" -gt "$MAX_DEBUG_LOG_SIZE" ]]; then
+      # Keep last 5000 lines (approximately 500KB)
+      tail -n 5000 "$DEBUG_LOG" > "${DEBUG_LOG}.tmp" 2>/dev/null && \
+        mv "${DEBUG_LOG}.tmp" "$DEBUG_LOG" 2>/dev/null || true
+    fi
+  fi
+}
+
+# Debug logging helper (with auto-rotation)
 debug_log() {
   local msg="$1"
+  rotate_debug_log_if_needed
   echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] stop-hook: $msg" >> "$DEBUG_LOG"
 }
 
@@ -122,6 +139,12 @@ debug_log "CLAUDE_SESSION_ID_env=${CLAUDE_SESSION_ID:-not_set}"
 if [[ -z "$CURRENT_SESSION_ID" ]]; then
   # No session ID available - allow exit (shouldn't happen)
   debug_log "EXIT: No session_id in hook input"
+  exit 0
+fi
+
+# Security: Validate session ID format to prevent path traversal
+if [[ ! "$CURRENT_SESSION_ID" =~ ^[a-zA-Z0-9._-]+$ ]] || [[ "$CURRENT_SESSION_ID" == *".."* ]]; then
+  debug_log "EXIT: Invalid session_id format (security check): $CURRENT_SESSION_ID"
   exit 0
 fi
 

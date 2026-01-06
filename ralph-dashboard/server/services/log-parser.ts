@@ -20,6 +20,14 @@ const RALPH_BASE_DIR = join(homedir(), '.claude', 'ralph-wiggum-pro');
 const LOGS_DIR = join(RALPH_BASE_DIR, 'logs');
 const LOG_FILE = join(LOGS_DIR, 'sessions.jsonl');
 
+// Old path for backward compatibility (read-only, for migration)
+const OLD_LOG_FILE = join(
+  homedir(),
+  '.claude',
+  'ralph-wiggum-pro-logs',
+  'sessions.jsonl'
+);
+
 /**
  * Extract --completion-promise=XXX from task text.
  * Returns { task: string (cleaned), completionPromise: string | null }
@@ -124,12 +132,15 @@ export function readIterationFromStateFile(
   return null;
 }
 
-export function parseLogFile(): LogEntry[] {
-  if (!existsSync(LOG_FILE)) {
+/**
+ * Parse entries from a single log file.
+ */
+function parseEntriesFromFile(filePath: string): LogEntry[] {
+  if (!existsSync(filePath)) {
     return [];
   }
 
-  const content = readFileSync(LOG_FILE, 'utf-8');
+  const content = readFileSync(filePath, 'utf-8');
   const lines = content.split('\n').filter((line) => line.trim());
 
   const entries: LogEntry[] = [];
@@ -144,6 +155,15 @@ export function parseLogFile(): LogEntry[] {
   }
 
   return entries;
+}
+
+export function parseLogFile(): LogEntry[] {
+  // Merge entries from both new and old log files for backward compatibility
+  const newEntries = parseEntriesFromFile(LOG_FILE);
+  const oldEntries = parseEntriesFromFile(OLD_LOG_FILE);
+
+  // Combine entries (old entries first for chronological order)
+  return [...oldEntries, ...newEntries];
 }
 
 export function mergeSessions(entries: LogEntry[]): Session[] {

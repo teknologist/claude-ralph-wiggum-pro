@@ -1,18 +1,5 @@
-import { homedir } from 'os';
-import { join } from 'path';
-import { readFileSync, existsSync, readdirSync } from 'fs';
-
-// Global paths
-const RALPH_BASE_DIR = join(homedir(), '.claude', 'ralph-wiggum-pro');
-const TRANSCRIPT_DIR = join(RALPH_BASE_DIR, 'transcripts');
-
-// Old path for backward compatibility
-const OLD_TRANSCRIPT_DIR = join(
-  homedir(),
-  '.claude',
-  'ralph-wiggum-pro-logs',
-  'transcripts'
-);
+import { readFileSync, existsSync } from 'fs';
+import { findFileByLoopId, fileExistsForLoopId } from './file-finder.js';
 
 export interface IterationEntry {
   iteration: number;
@@ -31,33 +18,7 @@ export interface TranscriptMessage {
  * old naming ({loop_id}-iterations.jsonl).
  */
 export function getIterationsFilePath(loopId: string): string | null {
-  // Try new directory with glob pattern (new naming: *-{loop_id}-iterations.jsonl)
-  if (existsSync(TRANSCRIPT_DIR)) {
-    const files = readdirSync(TRANSCRIPT_DIR);
-    const match = files.find(
-      (f) =>
-        f.endsWith(`-${loopId}-iterations.jsonl`) ||
-        f === `${loopId}-iterations.jsonl`
-    );
-    if (match) {
-      return join(TRANSCRIPT_DIR, match);
-    }
-  }
-
-  // Try old directory (backward compatibility)
-  if (existsSync(OLD_TRANSCRIPT_DIR)) {
-    const files = readdirSync(OLD_TRANSCRIPT_DIR);
-    const match = files.find(
-      (f) =>
-        f.endsWith(`-${loopId}-iterations.jsonl`) ||
-        f === `${loopId}-iterations.jsonl`
-    );
-    if (match) {
-      return join(OLD_TRANSCRIPT_DIR, match);
-    }
-  }
-
-  return null;
+  return findFileByLoopId(loopId, 'iterations.jsonl');
 }
 
 /**
@@ -66,36 +27,14 @@ export function getIterationsFilePath(loopId: string): string | null {
  * old naming ({loop_id}-full.jsonl).
  */
 export function getFullTranscriptFilePath(loopId: string): string | null {
-  // Try new directory with glob pattern
-  if (existsSync(TRANSCRIPT_DIR)) {
-    const files = readdirSync(TRANSCRIPT_DIR);
-    const match = files.find(
-      (f) => f.endsWith(`-${loopId}-full.jsonl`) || f === `${loopId}-full.jsonl`
-    );
-    if (match) {
-      return join(TRANSCRIPT_DIR, match);
-    }
-  }
-
-  // Try old directory (backward compatibility)
-  if (existsSync(OLD_TRANSCRIPT_DIR)) {
-    const files = readdirSync(OLD_TRANSCRIPT_DIR);
-    const match = files.find(
-      (f) => f.endsWith(`-${loopId}-full.jsonl`) || f === `${loopId}-full.jsonl`
-    );
-    if (match) {
-      return join(OLD_TRANSCRIPT_DIR, match);
-    }
-  }
-
-  return null;
+  return findFileByLoopId(loopId, 'full.jsonl');
 }
 
 /**
  * Check if iterations file exists for a given loop ID.
  */
 export function hasIterations(loopId: string): boolean {
-  return getIterationsFilePath(loopId) !== null;
+  return fileExistsForLoopId(loopId, 'iterations.jsonl');
 }
 
 /**
