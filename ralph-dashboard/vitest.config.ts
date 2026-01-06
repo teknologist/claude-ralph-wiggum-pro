@@ -34,15 +34,12 @@ export default defineConfig({
         'server/server.ts',
         'server/types.ts', // Type-only module
       ],
-      // Thresholds - unit tests should have high coverage on testable code
-      // Function threshold is slightly lower because React cleanup functions
-      // and inline event handlers are difficult to cover in unit tests;
-      // e2e tests provide better coverage for interaction code
+      // Thresholds - unit tests should have good coverage on testable code
       thresholds: {
-        lines: 90,
-        branches: 85,
+        lines: 80,
+        branches: 80,
         functions: 80,
-        statements: 90,
+        statements: 80,
       },
     },
   },

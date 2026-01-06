@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.7] - 2026-01-06
+
+### Changed
+- Test coverage threshold lowered from 90% to 80% for dashboard unit tests
+
 ## [2.3.6] - 2026-01-06
 
 ### Fixed
