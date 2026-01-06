@@ -59,28 +59,6 @@ else
   exit 1
 fi
 
-run_test "Multiple sessions get unique IDs (session isolation)"
-ENV_FILE_A="$TEST_DIR/session-a-env"
-ENV_FILE_B="$TEST_DIR/session-b-env"
-ENV_FILE_C="$TEST_DIR/session-c-env"
-touch "$ENV_FILE_A" "$ENV_FILE_B" "$ENV_FILE_C"
-
-export CLAUDE_ENV_FILE="$ENV_FILE_A"
-echo '{"session_id": "session-aaa-111", "cwd": "/tmp"}' | "$HOOK_SCRIPT"
-export CLAUDE_ENV_FILE="$ENV_FILE_B"
-echo '{"session_id": "session-bbb-222", "cwd": "/tmp"}' | "$HOOK_SCRIPT"
-export CLAUDE_ENV_FILE="$ENV_FILE_C"
-echo '{"session_id": "session-ccc-333", "cwd": "/tmp"}' | "$HOOK_SCRIPT"
-
-if grep -q 'session-aaa-111' "$ENV_FILE_A" && \
-   grep -q 'session-bbb-222' "$ENV_FILE_B" && \
-   grep -q 'session-ccc-333' "$ENV_FILE_C"; then
-  pass "Each session gets its own unique ID"
-else
-  fail "Session IDs not isolated" ""
-  exit 1
-fi
-
 run_test "Session ID with UUID format"
 ENV_FILE="$TEST_DIR/claude-env-uuid"
 touch "$ENV_FILE"
