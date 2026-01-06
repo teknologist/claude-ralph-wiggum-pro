@@ -26,7 +26,55 @@ fi
 RALPH_BASE_DIR="$HOME/.claude/ralph-wiggum-pro"
 LOG_DIR="$RALPH_BASE_DIR/logs"
 LOG_FILE="$LOG_DIR/sessions.jsonl"
-mkdir -p "$LOG_DIR"
+TRANSCRIPTS_DIR="$RALPH_BASE_DIR/transcripts"
+mkdir -p "$LOG_DIR" "$TRANSCRIPTS_DIR"
+
+# Maximum session log entries (each loop has 2 entries: start + completion)
+MAX_SESSION_ENTRIES=100
+
+# Rotate session log if it exceeds maximum entries
+# Also cleans up associated transcript files for purged entries
+rotate_session_log_if_needed() {
+  if [[ ! -f "$LOG_FILE" ]]; then
+    return 0
+  fi
+
+  local entry_count
+  entry_count=$(wc -l < "$LOG_FILE" | tr -d ' ')
+
+  if [[ "$entry_count" -le "$MAX_SESSION_ENTRIES" ]]; then
+    return 0
+  fi
+
+  # Calculate how many entries to remove
+  local entries_to_remove=$((entry_count - MAX_SESSION_ENTRIES))
+
+  # Extract loop_ids from entries being purged (for transcript cleanup)
+  local purged_loop_ids
+  purged_loop_ids=$(head -n "$entries_to_remove" "$LOG_FILE" | jq -r '.loop_id // empty' 2>/dev/null | sort -u)
+
+  # Use mktemp for atomic temp file (prevents race conditions)
+  local tmp_file
+  tmp_file=$(mktemp "${LOG_FILE}.XXXXXX") || return 0
+
+  # Keep only the last MAX_SESSION_ENTRIES entries
+  if tail -n "$MAX_SESSION_ENTRIES" "$LOG_FILE" > "$tmp_file" 2>/dev/null; then
+    mv "$tmp_file" "$LOG_FILE"
+
+    # Clean up transcript files for purged loop_ids
+    if [[ -n "$purged_loop_ids" ]]; then
+      while IFS= read -r loop_id; do
+        [[ -z "$loop_id" ]] && continue
+        # Remove transcript files matching this loop_id (iterations and full)
+        rm -f "$TRANSCRIPTS_DIR"/*-"${loop_id}"-iterations.jsonl 2>/dev/null || true
+        rm -f "$TRANSCRIPTS_DIR"/*-"${loop_id}"-full.jsonl 2>/dev/null || true
+      done <<< "$purged_loop_ids"
+    fi
+  else
+    # Cleanup temp file on failure
+    rm -f "$tmp_file" 2>/dev/null || true
+  fi
+}
 
 # Detect mode based on first argument
 if [[ "${1:-}" == "--start" ]]; then
@@ -111,7 +159,7 @@ if [[ "${1:-}" == "--start" ]]; then
 
   # Build JSON log entry
   TEMP_ENTRY=$(mktemp)
-  trap "rm -f '$TEMP_ENTRY'" EXIT
+  trap "rm -f \"$TEMP_ENTRY\" 2>/dev/null || true" EXIT
 
   jq -n -c \
     --arg loop_id "$LOOP_ID" \
@@ -138,6 +186,10 @@ if [[ "${1:-}" == "--start" ]]; then
     }' > "$TEMP_ENTRY"
 
   cat "$TEMP_ENTRY" >> "$LOG_FILE"
+  trap - EXIT  # Clear trap after temp file consumed
+
+  # Rotate log if it exceeds maximum entries
+  rotate_session_log_if_needed
 
   echo "Session started - logged to $LOG_FILE"
 
@@ -200,7 +252,7 @@ else
 
   # Build JSON log entry
   TEMP_ENTRY=$(mktemp)
-  trap "rm -f '$TEMP_ENTRY'" EXIT
+  trap "rm -f \"$TEMP_ENTRY\" 2>/dev/null || true" EXIT
 
   jq -n -c \
     --arg loop_id "$LOOP_ID" \
@@ -223,6 +275,10 @@ else
     }' > "$TEMP_ENTRY"
 
   cat "$TEMP_ENTRY" >> "$LOG_FILE"
+  trap - EXIT  # Clear trap after temp file consumed
+
+  # Rotate log if it exceeds maximum entries
+  rotate_session_log_if_needed
 
   echo "Session completed - logged to $LOG_FILE"
 

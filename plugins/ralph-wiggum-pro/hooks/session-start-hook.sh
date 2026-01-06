@@ -5,11 +5,51 @@
 
 set -euo pipefail
 
+# Global paths for debug logging
+RALPH_BASE_DIR="$HOME/.claude/ralph-wiggum-pro"
+LOGS_DIR="$RALPH_BASE_DIR/logs"
+DEBUG_LOG="$LOGS_DIR/debug.log"
+
+# Ensure directories exist
+mkdir -p "$LOGS_DIR"
+
+# Maximum debug log size (1MB)
+MAX_DEBUG_LOG_SIZE=1048576
+
+# Rotate debug log if it exceeds maximum size
+rotate_debug_log_if_needed() {
+  if [[ -f "$DEBUG_LOG" ]]; then
+    local size
+    size=$(stat -f%z "$DEBUG_LOG" 2>/dev/null || stat -c%s "$DEBUG_LOG" 2>/dev/null || { wc -c < "$DEBUG_LOG" 2>/dev/null; } || echo "0")
+    if [[ "$size" -gt "$MAX_DEBUG_LOG_SIZE" ]]; then
+      # Keep last 5000 lines (approximately 500KB)
+      local tmp_file
+      tmp_file=$(mktemp "${DEBUG_LOG}.XXXXXX") || return 0
+      if tail -n 5000 "$DEBUG_LOG" > "$tmp_file" 2>/dev/null; then
+        mv "$tmp_file" "$DEBUG_LOG" 2>/dev/null || rm -f "$tmp_file" 2>/dev/null
+      else
+        rm -f "$tmp_file" 2>/dev/null || true
+      fi
+    fi
+  fi
+}
+
+# Debug logging helper (with auto-rotation)
+debug_log() {
+  local msg="$1"
+  rotate_debug_log_if_needed
+  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] session-start-hook: $msg" >> "$DEBUG_LOG"
+}
+
 # Read hook input from stdin
 HOOK_INPUT=$(cat)
 
 # Extract session ID
 SESSION_ID=$(echo "$HOOK_INPUT" | jq -r '.session_id // empty')
+
+debug_log "=== SESSION START HOOK INVOKED ==="
+debug_log "session_id=$SESSION_ID"
+debug_log "CLAUDE_ENV_FILE=${CLAUDE_ENV_FILE:-not_set}"
 
 log_session() {
   local outcome="$1"
@@ -38,8 +78,30 @@ fi
 
 # Persist session ID as environment variable using Claude's special CLAUDE_ENV_FILE
 # This makes $CLAUDE_SESSION_ID available to all commands in this session
+# IMPORTANT: Replace (not append) to prevent stale values after /clear
 if [[ -n "${CLAUDE_ENV_FILE:-}" ]]; then
+  # Remove old CLAUDE_SESSION_ID if exists, then add new one (portable macOS/Linux)
+  if [[ -f "$CLAUDE_ENV_FILE" ]] && grep -q '^export CLAUDE_SESSION_ID=' "$CLAUDE_ENV_FILE" 2>/dev/null; then
+    # Use mktemp for atomic temp file (prevents race conditions)
+    ENV_TEMP_FILE=$(mktemp "${CLAUDE_ENV_FILE}.XXXXXX") || {
+      debug_log "WARNING: Failed to create temp file for env update"
+      ENV_TEMP_FILE=""
+    }
+    if [[ -n "$ENV_TEMP_FILE" ]]; then
+      # Trap ensures cleanup on interrupt/exit
+      trap "rm -f \"$ENV_TEMP_FILE\" 2>/dev/null || true" EXIT
+      if grep -v '^export CLAUDE_SESSION_ID=' "$CLAUDE_ENV_FILE" > "$ENV_TEMP_FILE" 2>/dev/null; then
+        mv "$ENV_TEMP_FILE" "$CLAUDE_ENV_FILE"
+        debug_log "Removed old CLAUDE_SESSION_ID from env file"
+      else
+        rm -f "$ENV_TEMP_FILE" 2>/dev/null || true
+        debug_log "WARNING: Failed to remove old CLAUDE_SESSION_ID from env file"
+      fi
+      trap - EXIT  # Clear trap after successful operation
+    fi
+  fi
   echo "export CLAUDE_SESSION_ID=\"$SESSION_ID\"" >> "$CLAUDE_ENV_FILE"
+  debug_log "Set CLAUDE_SESSION_ID=$SESSION_ID in env file"
 fi
 
 exit 0

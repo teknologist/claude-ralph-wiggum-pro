@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.2] - 2026-01-06
+
+### Added
+- **Session Log Rotation**: `sessions.jsonl` now auto-rotates at 100 entries to prevent unbounded growth
+  - Transcript files for purged entries are automatically cleaned up
+  - Rotation runs after each log write (both start and completion entries)
+
+### Fixed
+- **Slash Command Parse Error**: Fixed zsh parse error in `/test-session-id` command by splitting into multiple simple bash blocks instead of complex single-line command chains
+- **Session ID Mismatch After `/clear`**: Fixed bug where Ralph loops would stop iterating after running `/clear` command
+  - Root cause: `$CLAUDE_SESSION_ID` env var retained old session ID after `/clear` generated a new one
+  - `session-end-hook.sh`: Now clears `CLAUDE_SESSION_ID` from `CLAUDE_ENV_FILE` on session end
+  - `session-start-hook.sh`: Now replaces (instead of appends) `CLAUDE_SESSION_ID` to prevent stale values
+  - Added debug logging with auto-rotation to `session-start-hook.sh` for troubleshooting session ID issues
+- **Consistent Atomic Temp File Operations**: Applied `mktemp` pattern across all hooks
+  - `stop-hook.sh`, `session-start-hook.sh`, `session-end-hook.sh`: Debug log rotation now uses `mktemp`
+  - `log-session.sh`: Session log rotation and JSON entry temp files use `mktemp`
+  - Added trap handlers with proper double-quoting and `trap - EXIT` cleanup
+  - Added `wc -c` fallback with proper error suppression for file size detection
+
 ## [2.2.1] - 2026-01-06
 
 ### Fixed

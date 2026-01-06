@@ -26,11 +26,16 @@ MAX_DEBUG_LOG_SIZE=1048576
 rotate_debug_log_if_needed() {
   if [[ -f "$DEBUG_LOG" ]]; then
     local size
-    size=$(stat -f%z "$DEBUG_LOG" 2>/dev/null || stat -c%s "$DEBUG_LOG" 2>/dev/null || echo "0")
+    size=$(stat -f%z "$DEBUG_LOG" 2>/dev/null || stat -c%s "$DEBUG_LOG" 2>/dev/null || { wc -c < "$DEBUG_LOG" 2>/dev/null; } || echo "0")
     if [[ "$size" -gt "$MAX_DEBUG_LOG_SIZE" ]]; then
       # Keep last 5000 lines (approximately 500KB)
-      tail -n 5000 "$DEBUG_LOG" > "${DEBUG_LOG}.tmp" 2>/dev/null && \
-        mv "${DEBUG_LOG}.tmp" "$DEBUG_LOG" 2>/dev/null || true
+      local tmp_file
+      tmp_file=$(mktemp "${DEBUG_LOG}.XXXXXX") || return 0
+      if tail -n 5000 "$DEBUG_LOG" > "$tmp_file" 2>/dev/null; then
+        mv "$tmp_file" "$DEBUG_LOG" 2>/dev/null || rm -f "$tmp_file" 2>/dev/null
+      else
+        rm -f "$tmp_file" 2>/dev/null || true
+      fi
     fi
   fi
 }
@@ -63,12 +68,38 @@ if [[ ! "$SESSION_ID" =~ ^[a-zA-Z0-9._-]+$ ]] || [[ "$SESSION_ID" == *".."* ]]; 
   exit 0
 fi
 
+# Clear CLAUDE_SESSION_ID from CLAUDE_ENV_FILE to prevent stale values
+# This ensures the next session-start-hook sets a fresh value after /clear
+# NOTE: This runs ALWAYS on session end, regardless of whether there's an active loop
+if [[ -n "${CLAUDE_ENV_FILE:-}" ]] && [[ -f "$CLAUDE_ENV_FILE" ]]; then
+  # Remove any existing CLAUDE_SESSION_ID export lines (portable macOS/Linux)
+  if grep -q '^export CLAUDE_SESSION_ID=' "$CLAUDE_ENV_FILE" 2>/dev/null; then
+    # Use mktemp for atomic temp file (prevents race conditions)
+    ENV_TEMP_FILE=$(mktemp "${CLAUDE_ENV_FILE}.XXXXXX") || {
+      debug_log "WARNING: Failed to create temp file for env cleanup"
+      ENV_TEMP_FILE=""
+    }
+    if [[ -n "$ENV_TEMP_FILE" ]]; then
+      # Trap ensures cleanup on interrupt/exit
+      trap "rm -f \"$ENV_TEMP_FILE\" 2>/dev/null || true" EXIT
+      if grep -v '^export CLAUDE_SESSION_ID=' "$CLAUDE_ENV_FILE" > "$ENV_TEMP_FILE" 2>/dev/null; then
+        mv "$ENV_TEMP_FILE" "$CLAUDE_ENV_FILE"
+        debug_log "Cleared CLAUDE_SESSION_ID from env file"
+      else
+        rm -f "$ENV_TEMP_FILE" 2>/dev/null || true
+        debug_log "WARNING: Failed to clear CLAUDE_SESSION_ID from env file"
+      fi
+      trap - EXIT  # Clear trap after successful operation
+    fi
+  fi
+fi
+
 # Direct state file lookup
 STATE_FILE="$LOOPS_DIR/ralph-loop.${SESSION_ID}.local.md"
 debug_log "State file path: $STATE_FILE"
 
 if [[ ! -f "$STATE_FILE" ]]; then
-  # No active loop for this session - nothing to do
+  # No active loop for this session - env cleanup done, exit
   debug_log "EXIT: No state file found - no active loop to clean up"
   exit 0
 fi
