@@ -56,6 +56,15 @@ rotate_session_log_if_needed() {
 
   ROTATE_SCRIPT="$PROJECT_ROOT/ralph-dashboard/server/scripts/rotate-log.ts"
 
+  # DEBUG: Log path resolution (remove after verification)
+  {
+    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] rotate: CLAUDE_PROJECT_DIR=${CLAUDE_PROJECT_DIR:-unset}"
+    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] rotate: CLAUDE_PLUGIN_ROOT=${CLAUDE_PLUGIN_ROOT:-unset}"
+    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] rotate: PROJECT_ROOT=$PROJECT_ROOT"
+    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] rotate: ROTATE_SCRIPT=$ROTATE_SCRIPT"
+    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] rotate: script_exists=$([[ -f "$ROTATE_SCRIPT" ]] && echo yes || echo no)"
+  } >> "$LOG_DIR/debug.log" 2>/dev/null || true
+
   if [[ -f "$ROTATE_SCRIPT" ]] && command -v bun &>/dev/null; then
     bun run "$ROTATE_SCRIPT" 2>/dev/null || true
   fi
