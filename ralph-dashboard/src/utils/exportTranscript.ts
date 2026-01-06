@@ -49,6 +49,8 @@ function getStatusEmoji(status: string): string {
       return '⏹';
     case 'error':
       return '❌';
+    case 'abandoned':
+      return '⏹';
     case 'orphaned':
       return '👻';
     default:
@@ -71,6 +73,8 @@ function getStatusLabel(status: string): string {
       return 'Cancelled';
     case 'error':
       return 'Error';
+    case 'abandoned':
+      return 'Abandoned';
     case 'orphaned':
       return 'Orphaned';
     default:

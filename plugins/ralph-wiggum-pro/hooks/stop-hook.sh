@@ -130,6 +130,28 @@ copy_full_transcript() {
   return 0
 }
 
+# Helper function to find existing PPID file by walking process tree
+# (same logic as setup-ralph-loop.sh uses)
+# Returns the path to the ppid file if found
+find_ppid_file_from_process_tree() {
+  local current_pid=$$
+  local max_depth=10
+  local depth=0
+
+  while [[ $depth -lt $max_depth ]] && [[ "$current_pid" -gt 1 ]]; do
+    local session_file="$RALPH_BASE_DIR/sessions/ppid_$current_pid.id"
+    if [[ -f "$session_file" ]]; then
+      echo "$session_file"
+      return 0
+    fi
+    local parent_pid=$(ps -o ppid= -p "$current_pid" 2>/dev/null | tr -d ' ')
+    current_pid="$parent_pid"
+    [[ -z "$current_pid" ]] && break
+    ((depth++))
+  done
+  return 1
+}
+
 # Read hook input from stdin (advanced stop hook API)
 HOOK_INPUT=$(cat)
 
@@ -159,6 +181,24 @@ fi
 if [[ ! "$CURRENT_SESSION_ID" =~ ^[a-zA-Z0-9._-]+$ ]] || [[ "$CURRENT_SESSION_ID" == *".."* ]]; then
   debug_log "EXIT: Invalid session_id format (security check): $CURRENT_SESSION_ID"
   exit 0
+fi
+
+# Keep PPID file in sync with current session ID from Claude Code
+# This fixes the issue where subsequent loops fail because Claude Code generates
+# a new session ID without triggering session-start-hook to update the PPID file.
+# By updating here, setup-ralph-loop.sh will always read the correct session ID.
+PPID_FILE=$(find_ppid_file_from_process_tree)
+if [[ -n "$PPID_FILE" ]] && [[ -f "$PPID_FILE" ]]; then
+  CURRENT_PPID_SESSION=$(cat "$PPID_FILE" 2>/dev/null || echo "")
+  if [[ "$CURRENT_PPID_SESSION" != "$CURRENT_SESSION_ID" ]]; then
+    # Session ID changed - update the file atomically
+    TEMP_PPID_FILE=$(mktemp "${PPID_FILE}.XXXXXX" 2>/dev/null) || true
+    if [[ -n "$TEMP_PPID_FILE" ]]; then
+      echo "$CURRENT_SESSION_ID" > "$TEMP_PPID_FILE"
+      mv "$TEMP_PPID_FILE" "$PPID_FILE" 2>/dev/null || rm -f "$TEMP_PPID_FILE" 2>/dev/null
+      debug_log "Updated PPID file $PPID_FILE: $CURRENT_PPID_SESSION -> $CURRENT_SESSION_ID"
+    fi
+  fi
 fi
 
 # Direct state file lookup (no searching, no fallbacks)

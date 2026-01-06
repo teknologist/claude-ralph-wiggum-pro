@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.9] - 2026-01-06
+
+### Fixed
+- **Subsequent Loops Stop at Iteration 1**: Fixed critical bug where Ralph loops after the first one in a session would stop at iteration 1
+  - Root cause: Claude Code generates new session IDs internally without always triggering `session-start-hook`, causing PPID file to become stale. `setup-ralph-loop.sh` reads old session ID from PPID file, while `stop-hook.sh` receives new session ID from hook JSON → mismatch
+  - Fix: Stop hook now keeps PPID file synchronized by walking the process tree to find the existing PPID file and updating it with the current session ID
+  - Added `find_ppid_file_from_process_tree()` helper function that mirrors `setup-ralph-loop.sh`'s process tree walking logic
+  - Uses atomic file write (mktemp + mv) for safe concurrent access
+
 ## [2.2.8] - 2026-01-06
 
 ### Fixed

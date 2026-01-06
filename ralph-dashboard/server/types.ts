@@ -20,6 +20,7 @@ export interface CompletionLogEntry {
     | 'success'
     | 'max_iterations'
     | 'cancelled'
+    | 'abandoned'
     | 'error'
     | 'orphaned'
     | 'archived';
@@ -39,6 +40,7 @@ export interface Session {
     | 'active'
     | 'success'
     | 'cancelled'
+    | 'abandoned'
     | 'error'
     | 'max_iterations'
     | 'orphaned'
@@ -46,6 +48,7 @@ export interface Session {
   outcome?:
     | 'success'
     | 'cancelled'
+    | 'abandoned'
     | 'error'
     | 'max_iterations'
     | 'orphaned'
