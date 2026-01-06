@@ -31,14 +31,14 @@ The technique is described as "deterministically bad in an undeterministic world
 
 ## Available Commands
 
-### /ralph-loop <PROMPT> [OPTIONS]
+### /ralph-wiggum-pro:ralph-loop <PROMPT> [OPTIONS]
 
 Start a Ralph loop in your current session.
 
 **Usage:**
 ```
-/ralph-loop "Refactor the cache layer. Output <promise>DONE</promise> when complete." --completion-promise DONE --max-iterations 20
-/ralph-loop "Add tests. Output <promise>TESTS COMPLETE</promise> when all pass." --completion-promise "TESTS COMPLETE"
+/ralph-wiggum-pro:ralph-loop "Refactor the cache layer. Output <promise>DONE</promise> when complete." --completion-promise DONE --max-iterations 20
+/ralph-wiggum-pro:ralph-loop "Add tests. Output <promise>TESTS COMPLETE</promise> when all pass." --completion-promise "TESTS COMPLETE"
 ```
 
 **Options:**
@@ -58,13 +58,13 @@ Start a Ralph loop in your current session.
 
 ---
 
-### /list-ralph-loops
+### /ralph-wiggum-pro:list-ralph-loops
 
 List all active Ralph loops across all sessions.
 
 **Usage:**
 ```
-/list-ralph-loops
+/ralph-wiggum-pro:list-ralph-loops
 ```
 
 **Shows:**
@@ -75,13 +75,13 @@ List all active Ralph loops across all sessions.
 
 ---
 
-### /cancel-ralph
+### /ralph-wiggum-pro:cancel-ralph
 
 Cancel an active Ralph loop (removes the loop state file).
 
 **Usage:**
 ```
-/cancel-ralph
+/ralph-wiggum-pro:cancel-ralph
 ```
 
 **How it works:**
@@ -92,17 +92,17 @@ Cancel an active Ralph loop (removes the loop state file).
 
 ---
 
-### /ralph-stats [OPTIONS]
+### /ralph-wiggum-pro:ralph-stats [OPTIONS]
 
 View historical Ralph loop session data.
 
 **Usage:**
 ```
-/ralph-stats                    # Show last 10 sessions
-/ralph-stats --last 20          # Show last 20 sessions
-/ralph-stats --project my-api   # Filter by project
-/ralph-stats --outcome success  # Show only successful loops
-/ralph-stats --all              # Show all sessions
+/ralph-wiggum-pro:ralph-stats                    # Show last 10 sessions
+/ralph-wiggum-pro:ralph-stats --last 20          # Show last 20 sessions
+/ralph-wiggum-pro:ralph-stats --project my-api   # Filter by project
+/ralph-wiggum-pro:ralph-stats --outcome success  # Show only successful loops
+/ralph-wiggum-pro:ralph-stats --all              # Show all sessions
 ```
 
 **Options:**
@@ -148,7 +148,7 @@ The "loop" doesn't mean Claude talks to itself. It means:
 ### Interactive Bug Fix
 
 ```
-/ralph-loop "Fix the token refresh logic in auth.ts. Output <promise>FIXED</promise> when all tests pass." --completion-promise FIXED --max-iterations 10
+/ralph-wiggum-pro:ralph-loop "Fix the token refresh logic in auth.ts. Output <promise>FIXED</promise> when all tests pass." --completion-promise FIXED --max-iterations 10
 ```
 
 You'll see Ralph:

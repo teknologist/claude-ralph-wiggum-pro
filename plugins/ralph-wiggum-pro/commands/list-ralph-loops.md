@@ -90,5 +90,5 @@ Total: <N> active loop(s)
 Show iteration as "5/20" if MAX > 0, or "5/unlimited" if MAX is 0 (unlimited).
 
 After displaying, remind the user:
-- To cancel a loop: `/cancel-ralph`
-- To start a new loop: `/ralph-loop`
+- To cancel a loop: `/ralph-wiggum-pro:cancel-ralph`
+- To start a new loop: `/ralph-wiggum-pro:ralph-loop`

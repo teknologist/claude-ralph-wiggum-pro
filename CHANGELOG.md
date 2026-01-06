@@ -206,7 +206,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **SessionEnd Hook**: Automatic cleanup of state files when terminal closes (claude_session_end event)
-- **Force Flag**: `--force` option for `/ralph-loop` to auto-cancel existing loops without prompting
+- **Force Flag**: `--force` option for `/ralph-wiggum-pro:ralph-loop` to auto-cancel existing loops without prompting
 - **cancel-ralph-loop.sh**: New standalone script for programmatic loop cancellation
 
 ### Removed
@@ -391,7 +391,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.0.6] - 2026-01-04
 
 ### Added
-- **Unique Loop Identifiers (`loop_id`)**: Each `/ralph-loop` invocation now generates a unique UUID, fixing dashboard issues when loops are cancelled and restarted in the same session
+- **Unique Loop Identifiers (`loop_id`)**: Each `/ralph-wiggum-pro:ralph-loop` invocation now generates a unique UUID, fixing dashboard issues when loops are cancelled and restarted in the same session
 - Backward compatibility for legacy log entries without `loop_id` (falls back to `session_id`)
 
 ### Changed
@@ -462,7 +462,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Session Logging**: All loop sessions logged to `~/.claude/ralph-wiggum-pro-logs/sessions.jsonl`
-- **`/ralph-stats` Command**: View historical loop data with filtering
+- **`/ralph-wiggum-pro:ralph-stats` Command**: View historical loop data with filtering
 - Cancellation logging to session history
 - Atomic writes for log entries
 - jq dependency check with clear error message
@@ -474,12 +474,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Multi-Session Support**: Multiple Claude Code terminals can run independent loops
 - **Session-Scoped State Files**: `.claude/ralph-loop.{session_id}.local.md`
 - **SessionStart Hook**: Persists `CLAUDE_SESSION_ID` to environment
-- Confirmation prompts for `/cancel-ralph`
+- Confirmation prompts for `/ralph-wiggum-pro:cancel-ralph`
 - Comprehensive test suite for session isolation
 
 ### Fixed
-- Zsh glob expansion errors in `/list-ralph-loops`
-- Zsh glob expansion errors in `/cancel-ralph`
+- Zsh glob expansion errors in `/ralph-wiggum-pro:list-ralph-loops`
+- Zsh glob expansion errors in `/ralph-wiggum-pro:cancel-ralph`
 - Renamed marketplace to avoid impersonating official Anthropic plugin
 
 ## [1.0.0] - Initial Fork

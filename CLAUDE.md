@@ -71,7 +71,7 @@ bun run start             # Serve production build
 The plugin uses Claude Code's hook system to create self-referential loops:
 
 ```
-User runs /ralph-loop "task" --completion-promise "DONE"
+User runs /ralph-wiggum-pro:ralph-loop "task" --completion-promise "DONE"
                     ↓
         setup-ralph-loop.sh creates state file
                     ↓

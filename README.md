@@ -37,7 +37,7 @@ This fork adds the following features on top of the original Anthropic plugin:
 
 **Checklist System (v2.1.1):**
 - Task and acceptance criteria tracking
-- Progress display in dashboard and `/ralph-stats`
+- Progress display in dashboard and `/ralph-wiggum-pro:ralph-stats`
 - Checklist summary in each iteration's system message
 
 ### v2.0.x - Dashboard & Session Logging
@@ -49,7 +49,7 @@ This fork adds the following features on top of the original Anthropic plugin:
   - Run with `bunx ralph-dashboard` or `npx ralph-dashboard`
   - Configurable port (`--port`) and host (`--host 0.0.0.0` for public access)
 - **Session Logging**: All loops logged to `~/.claude/ralph-wiggum-pro/logs/sessions.jsonl`
-- **`/ralph-stats` Command**: View historical loop data with filtering by project, outcome, or count
+- **`/ralph-wiggum-pro:ralph-stats` Command**: View historical loop data with filtering by project, outcome, or count
 - **Active Loop Tracking**: Loops logged when they start (not just when complete)
 - **Remote Cancellation**: Cancel loops from dashboard
 - **Atomic Writes**: All file operations use `mktemp` + `mv` pattern
@@ -58,7 +58,7 @@ This fork adds the following features on top of the original Anthropic plugin:
 
 - **Multi-Session Support**: Multiple Claude Code terminals can run independent Ralph loops
 - **Session-Scoped State Files**: Each session gets isolated state files
-- **Confirmation Prompts**: `/cancel-ralph` asks for confirmation before cancelling
+- **Confirmation Prompts**: `/ralph-wiggum-pro:cancel-ralph` asks for confirmation before cancelling
 - **Comprehensive Test Suite**: Tests for session isolation, state file parsing, security validation
 
 ---
@@ -68,9 +68,9 @@ This fork adds the following features on top of the original Anthropic plugin:
 - **Session Isolation**: Multiple Claude Code terminals can run independent Ralph loops on the same project
 - **Progress Tracking**: Elapsed time display and iteration counting
 - **File-based Prompts**: Load complex prompts from markdown files with `--prompt-file`
-- **Loop Management**: List all active loops with `/list-ralph-loops`, cancel specific loops with `/cancel-ralph`
+- **Loop Management**: List all active loops with `/ralph-wiggum-pro:list-ralph-loops`, cancel specific loops with `/ralph-wiggum-pro:cancel-ralph`
 - **Session Logging**: All loop sessions are logged to `~/.claude/ralph-wiggum-pro/logs/sessions.jsonl` with structured JSON data
-- **Session Stats**: View historical loop data with `/ralph-stats` - filter by project, outcome, or time range
+- **Session Stats**: View historical loop data with `/ralph-wiggum-pro:ralph-stats` - filter by project, outcome, or time range
 
 ## What is Ralph?
 
@@ -84,7 +84,7 @@ This plugin implements Ralph using a **Stop hook** that intercepts Claude's exit
 
 ```bash
 # You run ONCE:
-/ralph-loop "Your task description. Output <promise>DONE</promise> when complete." --completion-promise DONE
+/ralph-wiggum-pro:ralph-loop "Your task description. Output <promise>DONE</promise> when complete." --completion-promise DONE
 
 # Then Claude Code automatically:
 # 1. Works on the task
@@ -161,14 +161,14 @@ Claude Code may internally regenerate session IDs (e.g., after `/clear` or when 
 1. Receiving the **current** session ID from Claude Code's hook JSON
 2. Walking the process tree to find the **existing** PPID file
 3. Updating that PPID file with the current session ID (atomic write)
-4. Subsequent `/ralph-loop` commands then read the correct session ID
+4. Subsequent `/ralph-wiggum-pro:ralph-loop` commands then read the correct session ID
 
 This ensures Ralph loops continue working even when session IDs change internally.
 
 ## Quick Start
 
 ```bash
-/ralph-loop "Build a REST API for todos. Requirements: CRUD operations, input validation, tests. Output <promise>COMPLETE</promise> when done." --completion-promise COMPLETE --max-iterations 50
+/ralph-wiggum-pro:ralph-loop "Build a REST API for todos. Requirements: CRUD operations, input validation, tests. Output <promise>COMPLETE</promise> when done." --completion-promise COMPLETE --max-iterations 50
 ```
 
 Claude will:
@@ -180,17 +180,17 @@ Claude will:
 
 ## Commands
 
-### /ralph-loop
+### /ralph-wiggum-pro:ralph-loop
 
 Start a Ralph loop in your current session. Each session gets its own isolated loop - you can run multiple loops in different terminals on the same project.
 
 **Usage:**
 ```bash
 # Inline prompt (must include <promise> instruction!)
-/ralph-loop "<prompt with instruction to output <promise>KEYWORD</promise>>" --completion-promise KEYWORD
+/ralph-wiggum-pro:ralph-loop "<prompt with instruction to output <promise>KEYWORD</promise>>" --completion-promise KEYWORD
 
 # File-based prompt (for complex tasks)
-/ralph-loop --prompt-file ./prompts/my-task.md --max-iterations 50 --completion-promise DONE
+/ralph-wiggum-pro:ralph-loop --prompt-file ./prompts/my-task.md --max-iterations 50 --completion-promise DONE
 ```
 
 **Options:**
@@ -201,24 +201,24 @@ Start a Ralph loop in your current session. Each session gets its own isolated l
 **Examples:**
 ```bash
 # Simple inline prompt - note the <promise> instruction in the prompt
-/ralph-loop "Build a REST API for todos. Output <promise>DONE</promise> when complete." --completion-promise DONE --max-iterations 20
+/ralph-wiggum-pro:ralph-loop "Build a REST API for todos. Output <promise>DONE</promise> when complete." --completion-promise DONE --max-iterations 20
 
 # Complex prompt from file (file should contain <promise> instructions)
-/ralph-loop --prompt-file ./tasks/api-spec.md --completion-promise COMPLETE
+/ralph-wiggum-pro:ralph-loop --prompt-file ./tasks/api-spec.md --completion-promise COMPLETE
 
 # Multi-word promise (requires quotes)
-/ralph-loop --prompt-file task.md --max-iterations 50 --completion-promise "ALL TESTS PASS"
+/ralph-wiggum-pro:ralph-loop --prompt-file task.md --max-iterations 50 --completion-promise "ALL TESTS PASS"
 ```
 
 **Critical**: Your prompt (inline or in file) MUST instruct Claude to output `<promise>KEYWORD</promise>` when done. The stop hook looks for this exact XML tag pattern.
 
-### /list-ralph-loops
+### /ralph-wiggum-pro:list-ralph-loops
 
 List all active Ralph loops across all sessions in the current project.
 
 **Usage:**
 ```bash
-/list-ralph-loops
+/ralph-wiggum-pro:list-ralph-loops
 ```
 
 Shows each loop's:
@@ -227,13 +227,13 @@ Shows each loop's:
 - Current iteration / max iterations
 - Elapsed time since start
 
-### /cancel-ralph
+### /ralph-wiggum-pro:cancel-ralph
 
 Cancel active Ralph loop(s). If multiple loops exist, you'll be prompted to select which to cancel.
 
 **Usage:**
 ```bash
-/cancel-ralph
+/ralph-wiggum-pro:cancel-ralph
 ```
 
 **Behavior:**
@@ -241,17 +241,17 @@ Cancel active Ralph loop(s). If multiple loops exist, you'll be prompted to sele
 - Multiple loops: Shows list with descriptions, allows selecting one or all to cancel
 - Logs the cancellation to session history
 
-### /ralph-stats
+### /ralph-wiggum-pro:ralph-stats
 
 View historical Ralph loop session data.
 
 **Usage:**
 ```bash
-/ralph-stats                        # Show last 10 sessions
-/ralph-stats --last 20              # Show last 20 sessions
-/ralph-stats --project my-api       # Filter by project name
-/ralph-stats --outcome success      # Filter by outcome
-/ralph-stats --all                  # Show all sessions
+/ralph-wiggum-pro:ralph-stats                        # Show last 10 sessions
+/ralph-wiggum-pro:ralph-stats --last 20              # Show last 20 sessions
+/ralph-wiggum-pro:ralph-stats --project my-api       # Filter by project name
+/ralph-wiggum-pro:ralph-stats --outcome success      # Filter by outcome
+/ralph-wiggum-pro:ralph-stats --all                  # Show all sessions
 ```
 
 **Options:**
@@ -390,7 +390,7 @@ Always use `--max-iterations` as a safety net to prevent infinite loops on impos
 
 ```bash
 # Recommended: Always set a reasonable iteration limit
-/ralph-loop "Implement feature X. Output <promise>DONE</promise> when complete." --completion-promise DONE --max-iterations 20
+/ralph-wiggum-pro:ralph-loop "Implement feature X. Output <promise>DONE</promise> when complete." --completion-promise DONE --max-iterations 20
 ```
 
 In your prompt, you can also include fallback instructions:
@@ -447,4 +447,4 @@ Keep trying until success. The loop handles retry logic automatically.
 
 ## For Help
 
-Run `/help` in Claude Code for detailed command reference and examples.
+Run `/ralph-wiggum-pro:help` in Claude Code for detailed command reference and examples.

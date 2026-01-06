@@ -126,13 +126,13 @@ Say: "No sessions found matching your filters."
 
 ## Additional Help
 
-If user runs `/ralph-stats --help` or `/ralph-stats -h`, show:
+If user runs `/ralph-wiggum-pro:ralph-stats --help` or `/ralph-wiggum-pro:ralph-stats -h`, show:
 
 ```
 📊 Ralph Stats - View loop session history
 
 USAGE:
-  /ralph-stats [OPTIONS]
+  /ralph-wiggum-pro:ralph-stats [OPTIONS]
 
 OPTIONS:
   --last N, -n N         Show last N sessions (default: 10)
@@ -143,12 +143,12 @@ OPTIONS:
   -h, --help             Show this help
 
 EXAMPLES:
-  /ralph-stats                          # Show last 10 sessions
-  /ralph-stats --active                 # Show only running loops
-  /ralph-stats --last 20                # Show last 20 sessions
-  /ralph-stats --project my-api         # Filter by project
-  /ralph-stats --outcome success        # Show only successful loops
-  /ralph-stats --all --outcome error    # Show all error sessions
+  /ralph-wiggum-pro:ralph-stats                          # Show last 10 sessions
+  /ralph-wiggum-pro:ralph-stats --active                 # Show only running loops
+  /ralph-wiggum-pro:ralph-stats --last 20                # Show last 20 sessions
+  /ralph-wiggum-pro:ralph-stats --project my-api         # Filter by project
+  /ralph-wiggum-pro:ralph-stats --outcome success        # Show only successful loops
+  /ralph-wiggum-pro:ralph-stats --all --outcome error    # Show all error sessions
 
 LOG LOCATION:
   ~/.claude/ralph-wiggum-pro/logs/sessions.jsonl
