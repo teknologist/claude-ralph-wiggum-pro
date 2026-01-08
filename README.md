@@ -1,3 +1,19 @@
+> **⚠️ Work in Progress**: This plugin is under active development. Expect bugs and breaking changes.
+
+## Installation
+
+Install this plugin in Claude Code:
+
+```bash
+# First, add the marketplace (one-time setup)
+/plugin marketplace add https://github.com/teknologist/claude-ralph-wiggum-pro.git
+
+# Then install the plugin
+/plugin install ralph-wiggum-pro@teknologist-plugins
+```
+
+---
+
 # Ralph Wiggum Pro
 
 Implementation of the Ralph Wiggum technique for iterative, self-referential AI development loops in Claude Code.
