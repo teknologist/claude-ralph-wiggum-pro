@@ -7,9 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-- **Test cleanup deleting real loop state files**: The test cleanup command in CLAUDE.md was using `rm -f ~/.claude/ralph-wiggum-pro/loops/ralph-loop.*.local.md` which deleted ALL state files including active production loops. Now only removes files matching test session ID patterns (`test-*`, `session-alpha`, etc.), preserving real UUID-based session files.
-
 ## [2.3.7] - 2026-01-06
 
 ### Changed
