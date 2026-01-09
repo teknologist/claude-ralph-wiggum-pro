@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.8] - 2026-01-10
+
+### Fixed
+- **Loop terminates on tool-only responses**: Fixed stop-hook.sh exiting with "Assistant message contained no text content" error when Claude responds with only tool calls (no text). Tool-only responses are valid (common with MCP tools like Playwright) and the loop now continues correctly.
+
 ## [2.3.7] - 2026-01-06
 
 ### Changed

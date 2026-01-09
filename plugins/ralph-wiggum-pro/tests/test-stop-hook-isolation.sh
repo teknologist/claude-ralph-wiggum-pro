@@ -655,7 +655,7 @@ fi
 # TRANSCRIPT CONTENT EDGE CASES
 # ============================================================================
 
-run_test "Empty assistant message in transcript → stops gracefully"
+run_test "Empty assistant message in transcript → continues loop"
 SESSION="session-empty-msg"
 create_state_file "$SESSION" 5 100 "DONE"
 cat > "$TEST_DIR/transcript.jsonl" <<'EOF'
@@ -666,10 +666,12 @@ EOF
 HOOK_INPUT=$(jq -n --arg sid "$SESSION" --arg tp "$TEST_DIR/transcript.jsonl" '{session_id: $sid, transcript_path: $tp, cwd: "."}')
 RESULT=$(echo "$HOOK_INPUT" | "$HOOK_SCRIPT" 2>&1) || true
 
-if [[ "$RESULT" != *'"decision": "block"'* ]]; then
-  pass "Handles empty assistant message gracefully"
+# Empty assistant content should NOT stop the loop - it's valid (tool-only responses, etc.)
+# The loop continues, and Claude will try again on the next iteration
+if [[ "$RESULT" == *'"decision": "block"'* ]]; then
+  pass "Continues loop on empty assistant message (tool-only response)"
 else
-  fail "Should handle empty message" "Result: $RESULT"
+  fail "Should continue loop on empty content" "Result: $RESULT"
   exit 1
 fi
 

@@ -344,12 +344,11 @@ if [[ $? -ne 0 ]]; then
   exit 0
 fi
 
+# Note: LAST_OUTPUT may be empty if Claude responded with only tool calls (no text).
+# This is valid - Claude often uses MCP tools without accompanying text.
+# We'll still check for promise completion and continue the loop.
 if [[ -z "$LAST_OUTPUT" ]]; then
-  echo "Ralph loop: Assistant message contained no text content" >&2
-  echo "   Ralph loop is stopping." >&2
-  log_session "error" "Assistant message contained no text content"
-  rm "$RALPH_STATE_FILE"
-  exit 0
+  debug_log "INFO: Iteration $ITERATION - Last assistant message had no text content (tool-only response)"
 fi
 
 # Check for completion promise (only if set)
