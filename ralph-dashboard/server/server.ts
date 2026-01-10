@@ -1,4 +1,5 @@
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { existsSync, readFileSync } from 'fs';
 import type { ServerWebSocket } from 'bun';
 import { handleGetSessions, handleGetSession } from './api/sessions';
@@ -26,7 +27,23 @@ interface ServerOptions {
   host: string;
 }
 
-const DIST_DIR = join(import.meta.dir, '..', 'dist');
+// Use import.meta.url for path resolution (works in both bundled and unbundled contexts)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Resolve DIST_DIR based on context:
+// - Production (bundled): dist/server/index.js → '..' → dist/
+// - Development: server/server.ts → '../dist' → dist/
+function resolveDist(): string {
+  // Try production path first (bundled in dist/server/)
+  const prodPath = join(__dirname, '..');
+  if (existsSync(join(prodPath, 'index.html'))) {
+    return prodPath;
+  }
+  // Fall back to development path (running from server/)
+  return join(__dirname, '..', 'dist');
+}
+const DIST_DIR = resolveDist();
 
 /**
  * Validate loop ID to prevent path traversal and injection attacks.

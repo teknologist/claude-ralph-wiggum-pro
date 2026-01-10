@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Automated npm publish**: CI workflow now publishes ralph-dashboard to npm when a GitHub Release is created (requires `NPM_TOKEN` secret)
+
 ## [2.3.8] - 2026-01-10
 
 ### Fixed
