@@ -392,10 +392,21 @@ if [[ "$COMPLETION_PROMISE" != "null" ]] && [[ -n "$COMPLETION_PROMISE" ]]; then
     ' "$TRANSCRIPT_PATH" 2>/dev/null || echo "")
   fi
 
-  # Extract text from <promise> tags using Perl for multiline support
-  # -0777 slurps entire input, s flag makes . match newlines
-  # .*? is non-greedy (takes FIRST tag), whitespace normalized
-  PROMISE_TEXT=$(echo "$ALL_ASSISTANT_TEXT" | perl -0777 -pe 's/.*?<promise>(.*?)<\/promise>.*/$1/s; s/^\s+|\s+$//g; s/\s+/ /g' 2>/dev/null || echo "")
+  # Extract the agent's most recent intact promise pair.
+  # -0777 slurps entire input. /s makes . match newlines.
+  #
+  # Two changes vs the original regex `.*?<promise>(.*?)</promise>`:
+  #   * leading `.*` is GREEDY so the engine seeks the LAST <promise>
+  #     opening tag in the text (the agent's most recent attempt). Crash
+  #     recovery is preserved: an emit in any earlier message still wins.
+  #   * the capture is `[^<]*` (not `.*?`) so the matched pair MUST be
+  #     intact — no `<` chars in the captured content, which means a stray
+  #     <promise> opening with no closing tag on the same line (e.g. in
+  #     narrative prose: "a `<promise>` keyword section") can no longer
+  #     hijack the capture and span across the real completion emit.
+  #
+  # Whitespace is normalized after extraction.
+  PROMISE_TEXT=$(echo "$ALL_ASSISTANT_TEXT" | perl -0777 -pe 's/.*<promise>([^<]*)<\/promise>.*/$1/s; s/^\s+|\s+$//g; s/\s+/ /g' 2>/dev/null || echo "")
 
   # Strip quotes from extracted promise text (for consistency with COMPLETION_PROMISE)
   PROMISE_TEXT="${PROMISE_TEXT//\"/}"
