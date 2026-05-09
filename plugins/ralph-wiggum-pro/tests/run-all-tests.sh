@@ -40,6 +40,7 @@ run_test() {
 run_test "$SCRIPT_DIR/test-session-start-hook.sh"
 run_test "$SCRIPT_DIR/test-setup-ralph-loop.sh"
 run_test "$SCRIPT_DIR/test-stop-hook-isolation.sh"
+run_test "$SCRIPT_DIR/test-promise-regex.sh"
 run_test "$SCRIPT_DIR/test-list-ralph-loops.sh"
 
 # Summary
