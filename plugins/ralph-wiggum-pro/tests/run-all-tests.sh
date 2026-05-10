@@ -39,6 +39,7 @@ run_test() {
 # Run individual test suites
 run_test "$SCRIPT_DIR/test-session-start-hook.sh"
 run_test "$SCRIPT_DIR/test-setup-ralph-loop.sh"
+run_test "$SCRIPT_DIR/test-raw-args-injection.sh"
 run_test "$SCRIPT_DIR/test-stop-hook-isolation.sh"
 run_test "$SCRIPT_DIR/test-list-ralph-loops.sh"
 
