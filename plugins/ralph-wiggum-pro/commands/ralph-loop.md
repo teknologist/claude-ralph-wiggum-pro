@@ -10,7 +10,16 @@ hide-from-slash-command-tool: "true"
 Execute the setup script to initialize the Ralph loop:
 
 ```!
-"${CLAUDE_PLUGIN_ROOT}/scripts/setup-ralph-loop.sh" $ARGUMENTS
+# Pass $ARGUMENTS as a single env-var string to bypass shell expansion.
+# The slash-command's enclosing shell (zsh on macOS, bash on Linux) would
+# otherwise word-split, glob-expand `*`, treat `(...)` as a function or
+# subshell, evaluate backticks, etc. — making any prompt that contains
+# common markdown punctuation crash with cryptic `parse error near ')'`
+# / `command not found: 1` messages before setup-ralph-loop.sh even runs.
+# By stuffing the raw text into RALPH_RAW_ARGS and invoking the script
+# with NO positional arguments, every metacharacter in the prompt is
+# immune to shell interpretation.
+RALPH_RAW_ARGS="$ARGUMENTS" "${CLAUDE_PLUGIN_ROOT}/scripts/setup-ralph-loop.sh"
 SETUP_EXIT_CODE=$?
 
 # If setup failed (e.g., loop already active), stop here

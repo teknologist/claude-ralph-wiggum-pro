@@ -50,11 +50,25 @@ COMPLETION_PROMISE="null"
 PROMPT_FILE=""
 FORCE_FLAG=false
 
-# Save original arguments for fallback detection (handles multi-line input edge cases)
-ORIGINAL_ARGS="$*"
+# RALPH_RAW_ARGS env-var entry point (shell-injection-safe mode).
+# When the slash-command wrapper sets RALPH_RAW_ARGS and passes ZERO
+# positional args, we skip the positional while-loop below (which would
+# otherwise shell-eval (...), `, *, etc. in the user's prompt and crash
+# with cryptic `parse error near ')'` before this script even runs).
+# In raw mode, ORIGINAL_ARGS = the untouched env-var string and all
+# flags + the prompt itself are extracted by the regex fallback section
+# below — that path never invokes shell word-split / glob / eval.
+RALPH_RAW_ARGS_MODE=0
+if [ -n "${RALPH_RAW_ARGS:-}" ] && [ $# -eq 0 ]; then
+  RALPH_RAW_ARGS_MODE=1
+  ORIGINAL_ARGS="$RALPH_RAW_ARGS"
+else
+  # Save original arguments for fallback detection (handles multi-line input edge cases)
+  ORIGINAL_ARGS="$*"
+fi
 
-# Parse options and positional arguments
-while [[ $# -gt 0 ]]; do
+# Parse options and positional arguments (skipped entirely in raw mode)
+while [[ "$RALPH_RAW_ARGS_MODE" -eq 0 ]] && [[ $# -gt 0 ]]; do
   case $1 in
     -h|--help)
       cat << 'HELP_EOF'
@@ -207,8 +221,31 @@ done
 # Handle empty array case (when only --prompt-file is used)
 if [[ ${#PROMPT_PARTS[@]} -gt 0 ]]; then
   PROMPT="${PROMPT_PARTS[*]}"
+elif [[ "$RALPH_RAW_ARGS_MODE" -eq 1 ]]; then
+  # Raw mode: seed PROMPT with the full env-var string. The flag-strip
+  # block below will remove --max-iterations / --completion-promise /
+  # --force / --prompt-file from this, leaving the actual prompt text.
+  PROMPT="$ORIGINAL_ARGS"
 else
   PROMPT=""
+fi
+
+# In raw mode, also extract --prompt-file from ORIGINAL_ARGS via regex
+# (the positional while-loop above is skipped, so PROMPT_FILE is still empty).
+if [[ "$RALPH_RAW_ARGS_MODE" -eq 1 ]] && [[ -z "$PROMPT_FILE" ]]; then
+  if [[ "$ORIGINAL_ARGS" =~ --prompt-file=\"([^\"]+)\" ]]; then
+    PROMPT_FILE="${BASH_REMATCH[1]}"
+  elif [[ "$ORIGINAL_ARGS" =~ --prompt-file=\'([^\']+)\' ]]; then
+    PROMPT_FILE="${BASH_REMATCH[1]}"
+  elif [[ "$ORIGINAL_ARGS" =~ --prompt-file=([^[:space:]\"\']+) ]]; then
+    PROMPT_FILE="${BASH_REMATCH[1]}"
+  elif [[ "$ORIGINAL_ARGS" =~ --prompt-file[[:space:]]+\"([^\"]+)\" ]]; then
+    PROMPT_FILE="${BASH_REMATCH[1]}"
+  elif [[ "$ORIGINAL_ARGS" =~ --prompt-file[[:space:]]+\'([^\']+)\' ]]; then
+    PROMPT_FILE="${BASH_REMATCH[1]}"
+  elif [[ "$ORIGINAL_ARGS" =~ --prompt-file[[:space:]]+([^[:space:]\"\']+) ]]; then
+    PROMPT_FILE="${BASH_REMATCH[1]}"
+  fi
 fi
 
 # If --prompt-file was specified, read prompt from file
