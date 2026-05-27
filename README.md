@@ -1,4 +1,4 @@
-> ⚠️ ~~ **Work in Progress** ~~: This plugin is currently abandoned as I moved to Pi Coding Agent. Expect bugs and breaking changes.
+> ⚠️ ~~Work in Progress~~: This plugin is currently abandoned as I moved to Pi Coding Agent. Expect bugs and breaking changes.
 
 ## Installation
 
